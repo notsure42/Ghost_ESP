@@ -102,7 +102,7 @@ jobs:
         with:
           path: release_artifacts
       - name: Create Release
-        uses: peter-evans/create-release@v1
+        uses: peter-evans/create-release@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag_name: ${{ github.event.inputs.version }}
@@ -110,7 +110,7 @@ jobs:
           draft: false
           prerelease: ${{ github.event.inputs.buildType == 'prerelease' }}
       - name: Upload Release Assets
-        uses: peter-evans/upload-release-asset@v1
+        uses: peter-evans/upload-release-asset@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           tag: ${{ github.event.inputs.version }}
