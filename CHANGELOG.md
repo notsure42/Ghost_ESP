@@ -1,5 +1,15 @@
 # Ghost ESP Changelog
 
+## Revival 01
+
+### ❤️ New Stuff
+
+- Basic changeable SD Card pin out through webUI and serial command line
+
+### 🐛 Bug Fixes
+
+- Use "GhostNet" as fallback default webUI credentials if G_Settings fields are not set or invalid
+
 ## 1.4.7
 
 ### ❤️ New Stuff
