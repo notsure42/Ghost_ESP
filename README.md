@@ -1,6 +1,8 @@
 # Ghost ESP: Revival
 
 
+> **Note:** Spooky's GhostESP has been archived and not in development anymore.
+
 
 
 **⭐️ Enjoying Ghost ESP? Please give the repo a star!**
