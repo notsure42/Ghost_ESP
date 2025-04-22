@@ -3,10 +3,6 @@ name: Compile
 on:
   workflow_dispatch:
     inputs:
-      version:
-        description: "Enter the release version (e.g. v1.0.0)"
-        required: true
-        type: string
       buildType:
         description: "Select the build type"
         required: true
@@ -15,96 +11,108 @@ on:
           - "prerelease"
           - "all"
         default: "prerelease"
+      version:
+        description: "Version number for this release (e.g., v1.2.3)"
+        required: true
+        type: string
 
 jobs:
   build:
     name: Build for ${{ matrix.target.name }}
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
         target:
           - { name: "esp32-generic", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.default.esp32", zip_name: "esp32-generic.zip" }
-          # (... the rest of your matrix targets ...)
+          - { name: "esp32s2-generic", idf_target: "esp32s2", sdkconfig_file: "configs/sdkconfig.default.esp32s2", zip_name: "esp32s2-generic.zip" }
+          - { name: "esp32s3-generic", idf_target: "esp32s3", sdkconfig_file: "configs/sdkconfig.default.esp32s3", zip_name: "esp32s3-generic.zip" }
+          - { name: "esp32c3-generic", idf_target: "esp32c3", sdkconfig_file: "configs/sdkconfig.default.esp32c3", zip_name: "esp32c3-generic.zip" }
+          - { name: "esp32c6-generic", idf_target: "esp32c6", sdkconfig_file: "configs/sdkconfig.default.esp32c6", zip_name: "esp32c6-generic.zip" }
+          - { name: "Awok V5", idf_target: "esp32s2", sdkconfig_file: "configs/sdkconfig.default.esp32s2", zip_name: "esp32v5_awok.zip" }
+          - { name: "ghostboard", idf_target: "esp32c6", sdkconfig_file: "configs/sdkconfig.ghostboard", zip_name: "ghostboard.zip" }
+          - { name: "MarauderV4_FlipperHub", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.marauderv4", zip_name: "MarauderV4_FlipperHub.zip" }
+          - { name: "MarauderV6&AwokDual", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.marauderv6", zip_name: "MarauderV6_AwokDual.zip" }
+          - { name: "AwokMini", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.awokmini", zip_name: "AwokMini.zip" }
+          - { name: "ESP32-S3-Cardputer", idf_target: "esp32s3", sdkconfig_file: "configs/sdkconfig.cardputer", zip_name: "ESP32-S3-Cardputer.zip" }
+          - { name: "CYD2USB", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.CYD2USB", zip_name: "CYD2USB.zip" }
+          - { name: "CYDMicroUSB", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.CYDMicroUSB", zip_name: "CYDMicroUSB.zip" }
+          - { name: "CYDDualUSB", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.CYDDualUSB", zip_name: "CYDDualUSB.zip" }
+          - { name: "CYD2USB2.4_Inch", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.CYD2USB2.4Inch", zip_name: "CYD2USB2.4Inch.zip" }
+          - { name: "CYD2USB2.4_Inch_C", idf_target: "esp32", sdkconfig_file: "configs/sdkconfig.CYD2USB2.4Inch_C_Varient", zip_name: "CYD2USB2.4Inch_C.zip" }
+          - { name: "Waveshare_LCD", idf_target: "esp32s3", sdkconfig_file: "configs/sdkconfig.waveshare7inch", zip_name: "Waveshare_LCD.zip" }
+          - { name: "Crowtech_LCD", idf_target: "esp32s3", sdkconfig_file: "configs/sdkconfig.crowtech7inch", zip_name: "Crowtech_LCD.zip" }
 
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v5
         with:
           python-version: '3.9'
-
       - name: Install ESP-IDF
         run: |
           sudo apt-get update
           sudo apt-get install -y wget git flex bison gperf python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util
           git clone -b v5.3.1 --depth 1 https://github.com/espressif/esp-idf.git ~/esp-idf
           ~/esp-idf/install.sh
-
       - name: Apply Custom SDK Config
         run: cp "${{ matrix.target.sdkconfig_file }}" sdkconfig.defaults
-
       - name: Set up ESP-IDF and Target
         run: |
           . ~/esp-idf/export.sh
           export IDF_TARGET=${{ matrix.target.idf_target }}
           echo "IDF_TARGET=${{ matrix.target.idf_target }}" >> $GITHUB_ENV
-
       - name: Clean and Build Project
         env:
           SDKCONFIG_DEFAULTS: "sdkconfig.defaults"
         run: |
           . ~/esp-idf/export.sh
           idf.py clean
-          idf.py build || {
-            echo "Build failed for ${{ matrix.target.name }}"
-            exit 1
-          }
-
+          idf.py build || { echo "Build failed for ${{ matrix.target.name }}"; exit 1; }
+      - name: Download Bootloader
+        run: |
+          BOOTLOADER_URL="https://cdn.spookytools.com/bootloaders/${{ matrix.target.idf_target }}.bin"
+          BOOTLOADER_PATH="build/bootloader.bin"
+          echo "Downloading bootloader from $BOOTLOADER_URL..."
+          curl -L -o "$BOOTLOADER_PATH" "$BOOTLOADER_URL" || { echo "Error: Bootloader download failed."; exit 1; }
+          [ -f "$BOOTLOADER_PATH" ] || { echo "Error: Bootloader file not found after download."; exit 1; }
+          echo "Bootloader downloaded successfully."
       - name: Package Artifacts into ZIP
         run: |
           ARTIFACT_DIR="packaged_artifacts"
           ZIP_FILE="${{ matrix.target.zip_name }}"
           mkdir -p "$ARTIFACT_DIR"
-          cp build/partition_table/partition-table.bin "$ARTIFACT_DIR/" || exit 1
-          cp build/*.bin "$ARTIFACT_DIR/" || exit 1
+          cp build/partition_table/partition-table.bin "$ARTIFACT_DIR/" \
+            && cp build/*.bin "$ARTIFACT_DIR/"
           cd "$ARTIFACT_DIR"
-          zip "../$ZIP_FILE" ./* || exit 1
+          zip "../$ZIP_FILE" ./*
           cd ..
-
+          ls -lh "$ZIP_FILE"
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target.zip_name }}
           path: ${{ matrix.target.zip_name }}
 
   release:
-    name: Upload to GitHub Release
+    name: Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          path: all_artifacts
-
-      - name: Flatten Artifact Files
-        run: |
-          mkdir -p flat_artifacts
-          find all_artifacts -type f -name "*.zip" -exec cp {} flat_artifacts/ \;
-
-      - name: Create GitHub Release (if needed)
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          tag=${{ github.event.inputs.version }}
-          if ! gh release view "$tag" > /dev/null 2>&1; then
-            gh release create "$tag" --title "$tag" --notes "Automated build for $tag"
-          fi
-
-      - name: Upload ZIPs to GitHub Release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          tag=${{ github.event.inputs.version }}
-          for file in flat_artifacts/*.zip; do
-            echo "Uploading $file to release $tag..."
-            gh release upload "$tag" "$file" --clobber
-          done
+          path: release_artifacts
+      - name: Create Release
+        uses: peter-evans/create-release@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag_name: ${{ github.event.inputs.version }}
+          release_name: ${{ github.event.inputs.version }}
+          draft: false
+          prerelease: ${{ github.event.inputs.buildType == 'prerelease' }}
+      - name: Upload Release Assets
+        uses: peter-evans/upload-release-asset@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ github.event.inputs.version }}
+          asset_path: release_artifacts/*.zip
+          asset_name: "${{ github.event.inputs.version }}-{{ github.event.inputs.buildType }}-*.zip"
