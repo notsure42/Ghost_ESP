@@ -17,11 +17,6 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 
 
 
-> **Note:** This is an **Alpha release**. Some features are still under development and may be unstable.
-
-
-
-
 
 ---
 
