@@ -41,18 +41,79 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
+      
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.9"
+          python-version: '3.9'
 
-      # … all your existing build / package steps stay exactly the same …
+      - name: Install ESP-IDF
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y wget git flex bison gperf python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util
+          git clone -b v5.3.1 --depth 1 https://github.com/espressif/esp-idf.git ~/esp-idf
+          ~/esp-idf/install.sh
+
+      - name: Apply Custom SDK Config
+        run: cp "${{ matrix.target.sdkconfig_file }}" sdkconfig.defaults
+
+      - name: Set up ESP-IDF and Target
+        run: |
+          . ~/esp-idf/export.sh
+          export IDF_TARGET=${{ matrix.target.idf_target }}
+          echo "IDF_TARGET=${{ matrix.target.idf_target }}" >> $GITHUB_ENV
+
+      - name: Clean and Build Project
+        env:
+          SDKCONFIG_DEFAULTS: "sdkconfig.defaults"
+        run: |
+          . ~/esp-idf/export.sh
+          idf.py clean
+          idf.py build || {
+            echo "Build failed for ${{ matrix.target.name }}"
+            exit 1
+          }
+
+      - name: Download Bootloader
+        run: |
+          BOOTLOADER_URL="https://cdn.spookytools.com/bootloaders/${{ matrix.target.idf_target }}.bin"
+          BOOTLOADER_PATH="build/bootloader.bin"
+          echo "Downloading bootloader from $BOOTLOADER_URL..."
+          curl -L -o "$BOOTLOADER_PATH" "$BOOTLOADER_URL" || {
+            echo "Error: Bootloader download failed."
+            exit 1
+          }
+          if [ ! -f "$BOOTLOADER_PATH" ]; then
+            echo "Error: Bootloader file not found after download."
+            exit 1
+          fi
+          echo "Bootloader downloaded successfully."
+
+      - name: Package Artifacts into ZIP
+        run: |
+          ARTIFACT_DIR="packaged_artifacts"
+          ZIP_FILE="${{ matrix.target.zip_name }}"
+          mkdir -p "$ARTIFACT_DIR"
+          cp build/partition_table/partition-table.bin "$ARTIFACT_DIR/" || {
+            echo "Failed to copy partition table"
+            exit 1
+          }
+          cp build/*.bin "$ARTIFACT_DIR/" || {
+            echo "Failed to copy binaries"
+            exit 1
+          }
+          cd "$ARTIFACT_DIR"
+          zip "../$ZIP_FILE" ./* || {
+            echo "Failed to create ZIP"
+            exit 1
+          }
+          cd ..
+          ls -lh "$ZIP_FILE"
 
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target.zip_name }}
           path: ${{ matrix.target.zip_name }}
-
+          
   upload_all:
     name: Upload Artifacts
     needs: build
