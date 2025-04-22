@@ -10,3 +10,5 @@ build
 /managed_components
 .clang-tidy
 checks.json
+sdkconfig
+sdkconfig.defaults

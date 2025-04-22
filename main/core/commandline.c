@@ -9,6 +9,7 @@
 #include "managers/rgb_manager.h"
 #include "managers/settings_manager.h"
 #include "managers/wifi_manager.h"
+#include "managers/sd_card_manager.h"
 #include "vendor/pcap.h"
 #include "vendor/printer.h"
 #include <esp_timer.h>
@@ -993,7 +994,6 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("        <Password>  : Wi-Fi password for the portal\n");
     TERMINAL_VIEW_ADD_TEXT("        <AP_ssid>   : SSID for the access point\n\n");
     TERMINAL_VIEW_ADD_TEXT("        <Domain>    : Custom Domain to Spoof In Address Bar\n\n");
-    TERMINAL_VIEW_ADD_TEXT("  OR \n\n");
     TERMINAL_VIEW_ADD_TEXT("Offline Usage: startportal <FilePath> <AP_ssid> <Domain>\n");
 
     printf("stopportal\n");
@@ -1136,6 +1136,51 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("    Description: Change RGB LED pins\n");
     TERMINAL_VIEW_ADD_TEXT("    Usage: setrgbpins <red> <green> <blue>\n");
     TERMINAL_VIEW_ADD_TEXT("           (use same value for all pins for single-pin LED strips)\n\n");
+
+    // SD Card Commands Help Text
+    printf("\n-- SD Card Pin Configuration --\n");
+    printf("Note: SD Card mode (MMC vs SPI) is set at compile time (sdkconfig).\n");
+    printf("These commands configure pins for the *active* mode.\n");
+    printf("Changing the mode requires recompiling firmware.\n");
+    TERMINAL_VIEW_ADD_TEXT("\n-- SD Card Pin Configuration --\n");
+    TERMINAL_VIEW_ADD_TEXT("Note: SD Card mode (MMC vs SPI) is set at compile time (sdkconfig).\n");
+    TERMINAL_VIEW_ADD_TEXT("These commands configure pins for the *active* mode.\n");
+    TERMINAL_VIEW_ADD_TEXT("Changing the mode requires recompiling firmware.\n");
+
+    printf("sd_config\n");
+    printf("    Description: Show the currently configured GPIO pins for both SDMMC and SPI modes.\n");
+    printf("    Usage: sd_config\n\n");
+    TERMINAL_VIEW_ADD_TEXT("sd_config\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Show current SD GPIO pin configuration.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: sd_config\n\n");
+
+    printf("sd_pins_mmc\n");
+    printf("    Description: Set GPIO pins for SDMMC mode (1 or 4 bit). Requires restart/reinit.\n");
+    printf("                 Only effective if firmware compiled for SDMMC mode.\n");
+    printf("    Usage: sd_pins_mmc <clk> <cmd> <d0> <d1> <d2> <d3>\n");
+    printf("    Example: sd_pins_mmc 19 18 20 21 22 23\n\n");
+    TERMINAL_VIEW_ADD_TEXT("sd_pins_mmc\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Set GPIO pins for SDMMC mode. Requires restart.\n");
+    TERMINAL_VIEW_ADD_TEXT("                 Only effective if firmware compiled for SDMMC.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: sd_pins_mmc <clk> <cmd> <d0> <d1> <d2> <d3>\n\n");
+
+    printf("sd_pins_spi\n");
+    printf("    Description: Set GPIO pins for SPI mode. Requires restart/reinit.\n");
+    printf("                 Only effective if firmware compiled for SPI mode.\n");
+    printf("    Usage: sd_pins_spi <cs> <clk> <miso> <mosi>\n");
+    printf("    Example: sd_pins_spi 5 18 19 23\n\n");
+    TERMINAL_VIEW_ADD_TEXT("sd_pins_spi\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Set GPIO pins for SPI mode. Requires restart.\n");
+    TERMINAL_VIEW_ADD_TEXT("                 Only effective if firmware compiled for SPI.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: sd_pins_spi <cs> <clk> <miso> <mosi>\n\n");
+
+    printf("sd_save_config\n");
+    printf("    Description: Save the current SD pin configuration (both modes) to the SD card.\n");
+    printf("                 Requires SD card to be mounted.\n");
+    printf("    Usage: sd_save_config\n\n");
+    TERMINAL_VIEW_ADD_TEXT("sd_save_config\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Save current SD pin config to SD card.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: sd_save_config\n\n");
 }
 
 void handle_capture(int argc, char **argv) {
@@ -1445,6 +1490,60 @@ void handle_setrgb(int argc, char **argv) {
     }
 }
 
+void handle_sd_config(int argc, char **argv) {
+  sd_card_print_config();
+}
+
+void handle_sd_pins_mmc(int argc, char **argv) {
+  if (argc != 7) {
+    printf("Usage: sd_pins_mmc <clk> <cmd> <d0> <d1> <d2> <d3>\n");
+    printf("Sets pins for SDMMC mode (only effective if compiled for MMC).\n");
+    printf("Example: sd_pins_mmc 19 18 20 21 22 23\n");
+    return;
+  }
+  
+  int clk = atoi(argv[1]);
+  int cmd = atoi(argv[2]);
+  int d0 = atoi(argv[3]);
+  int d1 = atoi(argv[4]);
+  int d2 = atoi(argv[5]);
+  int d3 = atoi(argv[6]);
+  
+  if (clk < 0 || cmd < 0 || d0 < 0 || d1 < 0 || d2 < 0 || d3 < 0 ||
+      clk > 40 || cmd > 40 || d0 > 40 || d1 > 40 || d2 > 40 || d3 > 40) {
+    printf("Invalid GPIO pins. Pins must be between 0 and 40.\n");
+    return;
+  }
+  
+  sd_card_set_mmc_pins(clk, cmd, d0, d1, d2, d3);
+}
+
+void handle_sd_pins_spi(int argc, char **argv) {
+  if (argc != 5) {
+    printf("Usage: sd_pins_spi <cs> <clk> <miso> <mosi>\n");
+    printf("Sets pins for SPI mode (only effective if compiled for SPI).\n");
+    printf("Example: sd_pins_spi 5 18 19 23\n");
+    return;
+  }
+  
+  int cs = atoi(argv[1]);
+  int clk = atoi(argv[2]);
+  int miso = atoi(argv[3]);
+  int mosi = atoi(argv[4]);
+  
+  if (cs < 0 || clk < 0 || miso < 0 || mosi < 0 ||
+      cs > 40 || clk > 40 || miso > 40 || mosi > 40) {
+    printf("Invalid GPIO pins. Pins must be between 0 and 40.\n");
+    return;
+  }
+  
+  sd_card_set_spi_pins(cs, clk, miso, mosi);
+}
+
+void handle_sd_save_config(int argc, char **argv) {
+  sd_card_save_config();
+}
+
 void register_commands() {
     register_command("help", handle_help);
     register_command("scanap", cmd_wifi_scan_start);
@@ -1480,6 +1579,11 @@ void register_commands() {
     register_command("apcred", handle_apcred);
     register_command("rgbmode", handle_rgb_mode);
     register_command("setrgbpins", handle_setrgb);
+    // SD Card Pin configuration commands
+    register_command("sd_config", handle_sd_config);
+    register_command("sd_pins_mmc", handle_sd_pins_mmc);
+    register_command("sd_pins_spi", handle_sd_pins_spi);
+    register_command("sd_save_config", handle_sd_save_config);
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }
