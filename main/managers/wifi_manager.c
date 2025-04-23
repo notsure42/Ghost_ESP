@@ -791,30 +791,34 @@ esp_err_t wifi_manager_start_evil_portal(const char *URLorFilePath, const char *
 
     wifi_config_t ap_config = {.ap = {
                                    .channel = 0,
-                                   // Always Open AP for offline/default mode
-                                   .authmode = WIFI_AUTH_OPEN,
                                    .ssid_hidden = 0,
                                    .max_connection = 8,
                                    .beacon_interval = 100,
                                }};
 
-    // Offline mode or missing/invalid credentials -> Open AP
+    // Configure AP SSID and optional PSK
+    if (SSID != NULL && SSID[0] != '\0') {
+        strlcpy((char *)ap_config.ap.ssid, SSID, sizeof(ap_config.ap.ssid));
+        ap_config.ap.ssid_len = strlen(SSID);
+    } else {
+        strlcpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
+        ap_config.ap.ssid_len = strlen(ap_ssid);
+    }
+    if (Password != NULL && Password[0] != '\0') {
+        ap_config.ap.authmode = WIFI_AUTH_WPA2_PSK;
+        strlcpy((char *)ap_config.ap.password, Password, sizeof(ap_config.ap.password));
+    } else {
+        ap_config.ap.authmode = WIFI_AUTH_OPEN;
+        memset(ap_config.ap.password, 0, sizeof(ap_config.ap.password));
+    }
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-    strlcpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
-    ap_config.ap.ssid_len = strlen(ap_ssid);
-    // Ensure password field is empty for OPEN auth
-    memset(ap_config.ap.password, 0, sizeof(ap_config.ap.password));
-
     dhcps_offer_t dhcps_dns_value = OFFER_DNS;
     esp_netif_dhcps_option(wifiAP, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER,
                            &dhcps_dns_value, sizeof(dhcps_dns_value));
-
     dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton("192.168.4.1");
     dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
     esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dnsserver);
-
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config));
-
     ESP_ERROR_CHECK(esp_wifi_start());
 
     start_portal_webserver();

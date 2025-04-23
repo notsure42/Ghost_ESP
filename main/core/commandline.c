@@ -422,100 +422,39 @@ void handle_ble_scan_cmd(int argc, char **argv) {
 #endif
 
 void handle_start_portal(int argc, char **argv) {
-
-    const char *URLorFilePath = settings_get_portal_url(&G_Settings);
-    const char *SSID = settings_get_portal_ssid(&G_Settings);
-    const char *Password = settings_get_portal_password(&G_Settings);
-    const char *AP_SSID = settings_get_portal_ap_ssid(&G_Settings);
-    const char *Domain = settings_get_portal_domain(&G_Settings); // Keep getting default domain
-    bool offlinemode = settings_get_portal_offline_mode(&G_Settings);
-
-    const char *url = URLorFilePath;
-    const char *ssid = SSID;
-    const char *password = Password;
-    const char *ap_ssid = AP_SSID;
-    bool use_default_portal = false;
-
-    if (argc == 3) { // FilePath, AP_SSID (Offline Mode)
-        if (strcmp(argv[1], "default") == 0) {
-            use_default_portal = true;
-            url = "INTERNAL_DEFAULT_PORTAL"; // Special marker
-        } else {
-            url = (argv[1] && argv[1][0] != '\\0') ? argv[1] : url;
-        }
-        ap_ssid = (argv[2] && argv[2][0] != '\\0') ? argv[2] : ap_ssid;
-        // Force offline mode for this usage
-        offlinemode = true; 
-        ssid = NULL; // Ensure WPA2 check doesn't pass
-        password = NULL;
-    } else if (argc != 1) { // Only command name (use defaults) or wrong number of args
-        printf("Error: Incorrect number of arguments.\\n");
-        TERMINAL_VIEW_ADD_TEXT("Error: Incorrect number of arguments.\\n");
-        printf("Usage: %s <FilePath|default> <APSSID>\\n", argv[0]);
-        TERMINAL_VIEW_ADD_TEXT("Usage: %s <FilePath|default> <APSSID>\\n", argv[0]);
+    if (argc != 4) {
+        printf("Usage: %s <FilePath> <AP_SSID> <PSK>\n", argv[0]);
+        TERMINAL_VIEW_ADD_TEXT("Usage: %s <FilePath> <AP_SSID> <PSK>\n", argv[0]);
         return;
     }
-
-    if (!use_default_portal && (url == NULL || url[0] == '\\0')) {
-        printf("Error: File Path cannot be empty unless using 'default'.\\n");
-        TERMINAL_VIEW_ADD_TEXT("Error: File Path cannot be empty unless using 'default'.\\n");
+    const char *url = argv[1];
+    const char *ap_ssid = argv[2];
+    const char *psk = argv[3];
+    if (strlen(url) >= MAX_PORTAL_PATH_LEN) {
+        printf("Error: Provided Path is too long.\n");
+        TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\n");
         return;
     }
-
-    if (ap_ssid == NULL || ap_ssid[0] == '\\0') {
-        printf("Error: AP SSID cannot be empty.\\n");
-        TERMINAL_VIEW_ADD_TEXT("Error: AP SSID cannot be empty.\\n");
-        return;
-    }
-
     char final_url_or_path[MAX_PORTAL_PATH_LEN];
-    if (use_default_portal) {
-        strcpy(final_url_or_path, url); // Copy the special marker
-    } else {
-        // Ensure url is not too long before copying
-        if (strlen(url) >= MAX_PORTAL_PATH_LEN) {
-             printf("Error: Provided Path is too long.\\n");
-             TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\\n");
-             return;
+    strcpy(final_url_or_path, url);
+    if (strncmp(final_url_or_path, "/mnt/", 5) != 0) {
+        const char *prefix = "/mnt/";
+        size_t prefix_len = strlen(prefix);
+        size_t current_len = strlen(final_url_or_path);
+        if (current_len + prefix_len >= MAX_PORTAL_PATH_LEN) {
+            printf("Error: Path too long after prepending %s.\n", prefix);
+            TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\n");
+            return;
         }
-        strcpy(final_url_or_path, url); // Start with the determined path
-
-        // Prepend /mnt/ if it's not the default portal and doesn't already start with /mnt/
-        if (strncmp(final_url_or_path, "/mnt/", 5) != 0) 
-        {
-            const char *prefix = "/mnt/";
-            size_t prefix_len = strlen(prefix);
-            size_t current_len = strlen(final_url_or_path);
-
-            // Check if there's enough space to prepend the prefix
-            if (current_len + prefix_len >= MAX_PORTAL_PATH_LEN) {
-                 printf("Error: Path too long after prepending %s.\\n", prefix);
-                 TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\\n");
-                 return;
-            }
-            
-            // Shift existing content to make space for the prefix
-            memmove(final_url_or_path + prefix_len, final_url_or_path, current_len + 1); // +1 for null terminator
-            
-            // Copy the prefix to the beginning
-            memcpy(final_url_or_path, prefix, prefix_len);
-
-            printf("Prepended %s to path: %s\\n", prefix, final_url_or_path);
-            TERMINAL_VIEW_ADD_TEXT("Prepended %s: %s\\n", prefix, final_url_or_path);
-        }
+        memmove(final_url_or_path + prefix_len, final_url_or_path, current_len + 1);
+        memcpy(final_url_or_path, prefix, prefix_len);
+        printf("Prepended %s to path: %s\n", prefix, final_url_or_path);
+        TERMINAL_VIEW_ADD_TEXT("Prepended %s: %s\n", prefix, final_url_or_path);
     }
-
-    // Use the 'Domain' variable fetched from settings earlier
-    const char* final_domain = Domain;
-
-    // Portal is always Open AP in offline mode (argc == 3 or using default)
-    printf("Starting portal (Open) with AP_SSID: %s, Domain: %s\\n", ap_ssid, final_domain ? final_domain : "(default)");
-    TERMINAL_VIEW_ADD_TEXT("Starting portal (Open)...\\n"
-                           "AP: %s\\n"
-                           "Domain: %s\\n",
-                           ap_ssid, final_domain ? final_domain : "(default)");
-    // Pass NULL for SSID/Password to ensure open mode is triggered
-    wifi_manager_start_evil_portal(final_url_or_path, NULL, NULL, ap_ssid, final_domain);
+    const char *domain = settings_get_portal_domain(&G_Settings);
+    printf("Starting portal with AP_SSID: %s, PSK: %s, Domain: %s\n", ap_ssid, psk, domain ? domain : "(default)");
+    TERMINAL_VIEW_ADD_TEXT("Starting portal...\nAP: %s\nPSK: %s\nDomain: %s\n", ap_ssid, psk, domain ? domain : "(default)");
+    wifi_manager_start_evil_portal(final_url_or_path, NULL, psk, ap_ssid, domain);
 }
 
 bool ip_str_to_bytes(const char *ip_str, uint8_t *ip_bytes) {
@@ -1004,20 +943,16 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("        -a  : AP selection index (must be a valid number)\n\n");
 
     printf("startportal\n");
-    printf("    Description: Start an Evil Portal using a local file or the default embedded page.\\n");
-    printf("                 /mnt/ prefix is added automatically to file paths if missing.\\n");
-    printf("    Usage: startportal <FilePath|default> <AP_ssid>\\n");
-    printf("    Arguments:\\n");
-    printf("        <FilePath>|default: Local file path (e.g., index.html) or 'default' for embedded page.\\n");
-    printf("        <AP_ssid>         : SSID for the Evil Portal's access point.\\n\\n");
-    TERMINAL_VIEW_ADD_TEXT("startportal\\n");
-    TERMINAL_VIEW_ADD_TEXT("    Desc: Start Evil Portal (Offline).\\n");
-    TERMINAL_VIEW_ADD_TEXT("          Use 'default' for embedded page.\\n");
-    TERMINAL_VIEW_ADD_TEXT("          /mnt/ added to paths automatically.\\n");
-    TERMINAL_VIEW_ADD_TEXT("    Usage: startportal <FilePath|default> <AP_ssid>\\n");
-    TERMINAL_VIEW_ADD_TEXT("    Args:\\n");
-    TERMINAL_VIEW_ADD_TEXT("      <FilePath>|default: Portal page path or 'default'.\\n");
-    TERMINAL_VIEW_ADD_TEXT("      <AP_ssid> : Portal AP SSID.\\n\\n");
+    printf("    Description: Start an Evil Portal using a local file or the default embedded page.\n");
+    printf("                 /mnt/ prefix is added automatically to file paths if missing.\n");
+    printf("    Usage: startportal [FilePath] [AP_SSID] [PSK]\n");
+    printf("    Use 'default' as the file path for the default Evil Portal.");
+    TERMINAL_VIEW_ADD_TEXT("startportal\n");
+    TERMINAL_VIEW_ADD_TEXT("    Desc: Start Evil Portal.\n");
+    TERMINAL_VIEW_ADD_TEXT("          Use 'default' as the file path for the default Evil Portal.\n");
+    TERMINAL_VIEW_ADD_TEXT("          /mnt/ added to paths automatically.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: startportal [FilePath] [AP_SSID] [PSK]\n");
+
 
     printf("stopportal\n");
     printf("    Description: Stop Evil Portal\n");
