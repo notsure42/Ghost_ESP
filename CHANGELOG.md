@@ -1,23 +1,40 @@
 # Ghost ESP Changelog
 
-## Revival 01
+## Revival v1.4.8
 
 ### ❤️ New Stuff
 
-- Basic changeable SD Card pin out through webUI and serial command line
-- Added default portal directly in the firmware (credit to @breaching and @bigbrodude6119 on github)
+- Basic changeable SD Card pin out through webUI and serial command line (requires existing sd support to be enabled in your board's build)
+
+- Added default evil portal html directly in the firmware (credit to @breaching and @bigbrodude6119 for the tiny but great html file)
 
 
 ### 🤏 Tweaks and Improvements
 
-- Simplified the Evil Portal command line arguments. eg. ```startportal <google.html> (or <default>) <EVILAP> <PSK>```
+- Simplified the Evil Portal command line arguments.
+  - eg. ```startportal <google.html> (or <default>) <EVILAP> <PSK>```
+
 - Save credentials in flash when using connect command
 
 ### 🐛 Bug Fixes
 
 - Use "GhostNet" as fallback default webUI credentials if G_Settings fields are not set or invalid
+
 - Fix webUI not using evilportal command line arguments
-- Fix evil‑portal local file serving
+
+- Fix evil‑portal local file serving 
+
+
+
+----------------------
+
+OK, we back. - 22 April 2025
+
+-----------------------
+
+Rest in Peace, GhostESP - 22 April 2025
+
+______________________
 
 ## 1.4.7
 
