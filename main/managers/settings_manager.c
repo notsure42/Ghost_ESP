@@ -85,7 +85,7 @@ void settings_set_defaults(FSettings *settings) {
   // Evil Portal defaults
   strcpy(settings->portal_url, "/default/path");
   strcpy(settings->portal_ssid, "EvilPortal");
-  strcpy(settings->portal_password, "EvilPortalPass");
+  strcpy(settings->portal_password, "");
   strcpy(settings->portal_ap_ssid, "EvilAP");
   strcpy(settings->portal_domain, "portal.local");
   settings->portal_offline_mode = false;

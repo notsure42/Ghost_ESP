@@ -9,6 +9,8 @@
 ### 🐛 Bug Fixes
 
 - Use "GhostNet" as fallback default webUI credentials if G_Settings fields are not set or invalid
+- Fix webUI not using evilportal command line arguments
+- Improve evil‑portal local file serving and add .html handler
 
 ## 1.4.7
 

