@@ -1953,7 +1953,7 @@
             PortalAPSSID = wrapInQuotesIfNeeded(PortalAPSSID);
             PortalDomain = wrapInQuotesIfNeeded(PortalDomain);
 
-            const command = `startportal`;
+            const command = `startportal ${PortalURL} ${PortalSSID} ${PortalPassword} ${PortalAPSSID} ${PortalDomain}`;
 
             fetch('/api/command', {
                 method: 'POST',
