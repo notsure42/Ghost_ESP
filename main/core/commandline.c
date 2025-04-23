@@ -21,6 +21,7 @@
 #include <sys/socket.h>
 #include <vendor/dial_client.h>
 #include "esp_wifi.h"
+#include "managers/default_portal.h"
 
 static Command *command_list_head = NULL;
 TaskHandle_t VisualizerHandle = NULL;
@@ -433,30 +434,31 @@ void handle_start_portal(int argc, char **argv) {
     const char *ssid = SSID;
     const char *password = Password;
     const char *ap_ssid = AP_SSID;
-    // Domain is now always from settings, not args
+    bool use_default_portal = false;
 
-    if (argc == 5) { // URL, SSID, Password, AP_SSID (Online Mode)
-        url = (argv[1] && argv[1][0] != '\\0') ? argv[1] : url;
-        ssid = (argv[2] && argv[2][0] != '\\0') ? argv[2] : ssid;
-        password = (argv[3] && argv[3][0] != '\\0') ? argv[3] : password;
-        ap_ssid = (argv[4] && argv[4][0] != '\\0') ? argv[4] : ap_ssid;
-    } else if (argc == 3) { // FilePath, AP_SSID (Offline Mode)
-        url = (argv[1] && argv[1][0] != '\\0') ? argv[1] : url;
+    if (argc == 3) { // FilePath, AP_SSID (Offline Mode)
+        if (strcmp(argv[1], "default") == 0) {
+            use_default_portal = true;
+            url = "INTERNAL_DEFAULT_PORTAL"; // Special marker
+        } else {
+            url = (argv[1] && argv[1][0] != '\\0') ? argv[1] : url;
+        }
         ap_ssid = (argv[2] && argv[2][0] != '\\0') ? argv[2] : ap_ssid;
-        // ssid and password will remain defaults, ensuring offline mode is triggered if not valid WPA2
+        // Force offline mode for this usage
+        offlinemode = true; 
+        ssid = NULL; // Ensure WPA2 check doesn't pass
+        password = NULL;
     } else if (argc != 1) { // Only command name (use defaults) or wrong number of args
         printf("Error: Incorrect number of arguments.\\n");
         TERMINAL_VIEW_ADD_TEXT("Error: Incorrect number of arguments.\\n");
-        printf("Online Usage: %s <URL> <SSID> <Password> <AP_ssid>\\n", argv[0]);
-        TERMINAL_VIEW_ADD_TEXT("Online Usage: %s <URL> <SSID> <Password> <AP_ssid>\\n", argv[0]);
-        printf("Offline Usage: %s <filepath> <APSSID>\\n", argv[0]);
-        TERMINAL_VIEW_ADD_TEXT("Offline Usage: %s <filepath> <APSSID>\\n", argv[0]);
+        printf("Usage: %s <FilePath|default> <APSSID>\\n", argv[0]);
+        TERMINAL_VIEW_ADD_TEXT("Usage: %s <FilePath|default> <APSSID>\\n", argv[0]);
         return;
     }
 
-    if (url == NULL || url[0] == '\\0') {
-        printf("Error: URL or File Path cannot be empty.\\n");
-        TERMINAL_VIEW_ADD_TEXT("Error: URL or File Path cannot be empty.\\n");
+    if (!use_default_portal && (url == NULL || url[0] == '\\0')) {
+        printf("Error: File Path cannot be empty unless using 'default'.\\n");
+        TERMINAL_VIEW_ADD_TEXT("Error: File Path cannot be empty unless using 'default'.\\n");
         return;
     }
 
@@ -466,67 +468,54 @@ void handle_start_portal(int argc, char **argv) {
         return;
     }
 
-    // Domain check removed as it's no longer a required command-line argument
-
     char final_url_or_path[MAX_PORTAL_PATH_LEN];
-    // Ensure url is not too long before copying
-    if (strlen(url) >= MAX_PORTAL_PATH_LEN) {
-         printf("Error: Provided URL/Path is too long.\\n");
-         TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\\n");
-         return;
-    }
-    strcpy(final_url_or_path, url); // Start with the determined URL/path
-
-    // Prepend /mnt/ if it's not a URL and doesn't already start with /mnt/
-    if (strncmp(final_url_or_path, "http://", 7) != 0 &&
-        strncmp(final_url_or_path, "https://", 8) != 0 &&
-        strncmp(final_url_or_path, "/mnt/", 5) != 0) 
-    {
-        const char *prefix = "/mnt/";
-        size_t prefix_len = strlen(prefix);
-        size_t current_len = strlen(final_url_or_path);
-
-        // Check if there's enough space to prepend the prefix
-        if (current_len + prefix_len >= MAX_PORTAL_PATH_LEN) {
-             printf("Error: Path too long after prepending %s.\\n", prefix);
+    if (use_default_portal) {
+        strcpy(final_url_or_path, url); // Copy the special marker
+    } else {
+        // Ensure url is not too long before copying
+        if (strlen(url) >= MAX_PORTAL_PATH_LEN) {
+             printf("Error: Provided Path is too long.\\n");
              TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\\n");
              return;
         }
-        
-        // Shift existing content to make space for the prefix
-        memmove(final_url_or_path + prefix_len, final_url_or_path, current_len + 1); // +1 for null terminator
-        
-        // Copy the prefix to the beginning
-        memcpy(final_url_or_path, prefix, prefix_len);
+        strcpy(final_url_or_path, url); // Start with the determined path
 
-        printf("Prepended %s to path: %s\\n", prefix, final_url_or_path);
-        TERMINAL_VIEW_ADD_TEXT("Prepended %s: %s\\n", prefix, final_url_or_path);
+        // Prepend /mnt/ if it's not the default portal and doesn't already start with /mnt/
+        if (strncmp(final_url_or_path, "/mnt/", 5) != 0) 
+        {
+            const char *prefix = "/mnt/";
+            size_t prefix_len = strlen(prefix);
+            size_t current_len = strlen(final_url_or_path);
+
+            // Check if there's enough space to prepend the prefix
+            if (current_len + prefix_len >= MAX_PORTAL_PATH_LEN) {
+                 printf("Error: Path too long after prepending %s.\\n", prefix);
+                 TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\\n");
+                 return;
+            }
+            
+            // Shift existing content to make space for the prefix
+            memmove(final_url_or_path + prefix_len, final_url_or_path, current_len + 1); // +1 for null terminator
+            
+            // Copy the prefix to the beginning
+            memcpy(final_url_or_path, prefix, prefix_len);
+
+            printf("Prepended %s to path: %s\\n", prefix, final_url_or_path);
+            TERMINAL_VIEW_ADD_TEXT("Prepended %s: %s\\n", prefix, final_url_or_path);
+        }
     }
 
     // Use the 'Domain' variable fetched from settings earlier
     const char* final_domain = Domain;
 
-    // Check if we should start in online mode (valid SSID/Password, offline mode disabled)
-    if (ssid && ssid[0] != '\\0' && password && strlen(password) >= 8 && !offlinemode) {
-        printf("Starting portal (WPA2) with SSID: %s, AP_SSID: %s, Domain: %s\\n",
-               ssid, ap_ssid, final_domain ? final_domain : "(default)");
-        TERMINAL_VIEW_ADD_TEXT("Starting portal (WPA2)...\\n"
-                               "SSID: %s\\n"
-                               "AP: %s\\n"
-                               "Domain: %s\\n",
-                               ssid, ap_ssid, final_domain ? final_domain : "(default)");
-        wifi_manager_start_evil_portal(final_url_or_path, ssid, password, ap_ssid, final_domain);
-    } 
-    // Check if offline mode is explicitly enabled OR if online mode check failed (implying default/open AP)
-    else if (offlinemode || !(ssid && ssid[0] != '\\0' && password && strlen(password) >= 8)) {
-        printf("Starting portal (Open) with AP_SSID: %s, Domain: %s\\n", ap_ssid, final_domain ? final_domain : "(default)");
-        TERMINAL_VIEW_ADD_TEXT("Starting portal (Open)...\\n"
-                               "AP: %s\\n"
-                               "Domain: %s\\n",
-                               ap_ssid, final_domain ? final_domain : "(default)");
-        // Pass NULL for SSID/Password to ensure open mode is triggered if defaults were used
-        wifi_manager_start_evil_portal(final_url_or_path, NULL, NULL, ap_ssid, final_domain);
-    }
+    // Portal is always Open AP in offline mode (argc == 3 or using default)
+    printf("Starting portal (Open) with AP_SSID: %s, Domain: %s\\n", ap_ssid, final_domain ? final_domain : "(default)");
+    TERMINAL_VIEW_ADD_TEXT("Starting portal (Open)...\\n"
+                           "AP: %s\\n"
+                           "Domain: %s\\n",
+                           ap_ssid, final_domain ? final_domain : "(default)");
+    // Pass NULL for SSID/Password to ensure open mode is triggered
+    wifi_manager_start_evil_portal(final_url_or_path, NULL, NULL, ap_ssid, final_domain);
 }
 
 bool ip_str_to_bytes(const char *ip_str, uint8_t *ip_bytes) {
@@ -1015,18 +1004,19 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("        -a  : AP selection index (must be a valid number)\n\n");
 
     printf("startportal\n");
-    printf("    Description: Start an Evil Portal using a local file.\\n");
-    printf("                 /mnt/ prefix is added automatically to the file path if missing.\\n");
-    printf("    Usage: startportal <FilePath> <AP_ssid>\\n");
+    printf("    Description: Start an Evil Portal using a local file or the default embedded page.\\n");
+    printf("                 /mnt/ prefix is added automatically to file paths if missing.\\n");
+    printf("    Usage: startportal <FilePath|default> <AP_ssid>\\n");
     printf("    Arguments:\\n");
-    printf("        <FilePath>: Local file path (e.g., index.html) for the portal page.\\n");
-    printf("        <AP_ssid> : SSID for the Evil Portal's access point.\\n\\n");
+    printf("        <FilePath>|default: Local file path (e.g., index.html) or 'default' for embedded page.\\n");
+    printf("        <AP_ssid>         : SSID for the Evil Portal's access point.\\n\\n");
     TERMINAL_VIEW_ADD_TEXT("startportal\\n");
-    TERMINAL_VIEW_ADD_TEXT("    Desc: Start Evil Portal.\\n");
+    TERMINAL_VIEW_ADD_TEXT("    Desc: Start Evil Portal (Offline).\\n");
+    TERMINAL_VIEW_ADD_TEXT("          Use 'default' for embedded page.\\n");
     TERMINAL_VIEW_ADD_TEXT("          /mnt/ added to paths automatically.\\n");
-    TERMINAL_VIEW_ADD_TEXT("    Usage: startportal <FilePath> <AP_ssid>\\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: startportal <FilePath|default> <AP_ssid>\\n");
     TERMINAL_VIEW_ADD_TEXT("    Args:\\n");
-    TERMINAL_VIEW_ADD_TEXT("      <FilePath>: Portal page file path.\\n");
+    TERMINAL_VIEW_ADD_TEXT("      <FilePath>|default: Portal page path or 'default'.\\n");
     TERMINAL_VIEW_ADD_TEXT("      <AP_ssid> : Portal AP SSID.\\n\\n");
 
     printf("stopportal\n");

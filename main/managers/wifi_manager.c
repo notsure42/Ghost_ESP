@@ -30,9 +30,10 @@
 #ifdef WITH_SCREEN
 #include "managers/views/music_visualizer.h"
 #endif
-// Include Outside so we have access to the Terminal View Macro
+
 #include "managers/views/terminal_screen.h"
-#include <inttypes.h> // Add include for PRIu32
+#include <inttypes.h>
+#include "managers/default_portal.h"
 
 #define MAX_DEVICES 255
 #define CHUNK_SIZE 8192
@@ -589,6 +590,16 @@ esp_err_t portal_handler(httpd_req_t *req) {
     printf("Client requested URL: %s\n", req->uri);
     ESP_LOGI(TAG, "Free heap before serving portal: %" PRIu32 " bytes", esp_get_free_heap_size()); // Log heap size
 
+    // Check if we should serve the default embedded portal
+    if (strcmp(PORTALURL, "INTERNAL_DEFAULT_PORTAL") == 0) {
+        httpd_resp_set_type(req, "text/html");
+        httpd_resp_send(req, default_portal_html, strlen(default_portal_html));
+        ESP_LOGI(TAG, "Served default embedded portal.");
+        ESP_LOGI(TAG, "Free heap after serving default portal: %" PRIu32 " bytes", esp_get_free_heap_size()); // Log heap size
+        return ESP_OK;
+    }
+
+    // Otherwise, proceed with streaming from URL or file
     esp_err_t err = stream_data_to_client(req, PORTALURL, "text/html");
 
     if (err != ESP_OK) {
@@ -744,12 +755,24 @@ httpd_handle_t start_portal_webserver(void) {
     return evilportal_server;
 }
 
-esp_err_t wifi_manager_start_evil_portal(const char *URL, const char *SSID, const char *Password,
+esp_err_t wifi_manager_start_evil_portal(const char *URLorFilePath, const char *SSID, const char *Password,
                                           const char *ap_ssid, const char *domain) {
     login_done = false; // Reset login state on start
-    if (strlen(URL) > 0 && strlen(domain) > 0) {
-        strlcpy(PORTALURL, URL, sizeof(PORTALURL));
-        strlcpy(domain_str, domain, sizeof(domain_str));
+    // Copy the provided URL/FilePath or the special marker for default portal
+    if (URLorFilePath != NULL && strlen(URLorFilePath) < sizeof(PORTALURL)) {
+        strlcpy(PORTALURL, URLorFilePath, sizeof(PORTALURL)); 
+    } else {
+        ESP_LOGE(TAG, "Invalid or too long URL/FilePath provided for portal.");
+        // Consider setting a safe default or returning an error
+        // For now, let's try setting the internal default marker if invalid
+        strcpy(PORTALURL, "INTERNAL_DEFAULT_PORTAL"); 
+    }
+
+    // Domain is fetched from settings in commandline.c, just copy it if provided
+    if (domain != NULL && strlen(domain) < sizeof(domain_str)) {
+         strlcpy(domain_str, domain, sizeof(domain_str));
+    } else {
+         domain_str[0] = '\0'; // Ensure empty if invalid
     }
 
     ap_manager_stop_services();
@@ -766,120 +789,47 @@ esp_err_t wifi_manager_start_evil_portal(const char *URL, const char *SSID, cons
     esp_netif_set_ip_info(wifiAP, &ipInfo_ap);
     esp_netif_dhcps_start(wifiAP);
 
-    wifi_config_t wifi_config = {0};
     wifi_config_t ap_config = {.ap = {
                                    .channel = 0,
-                                   .authmode = WIFI_AUTH_WPA2_WPA3_PSK,
+                                   // Always Open AP for offline/default mode
+                                   .authmode = WIFI_AUTH_OPEN,
                                    .ssid_hidden = 0,
                                    .max_connection = 8,
                                    .beacon_interval = 100,
                                }};
 
-    // Determine authmode based on provided password
-    wifi_auth_mode_t auth_mode = WIFI_AUTH_OPEN;
-    if (Password != NULL && strlen(Password) >= 8) {
-        auth_mode = WIFI_AUTH_WPA2_PSK; // Or WPA2_WPA3_PSK if supported/desired
-    }
-    ap_config.ap.authmode = auth_mode;
+    // Offline mode or missing/invalid credentials -> Open AP
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+    strlcpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
+    ap_config.ap.ssid_len = strlen(ap_ssid);
+    // Ensure password field is empty for OPEN auth
+    memset(ap_config.ap.password, 0, sizeof(ap_config.ap.password));
 
-    if (SSID != NULL && strlen(SSID) > 0 && Password != NULL && strlen(Password) >= 8 && !settings_get_portal_offline_mode(&G_Settings)) {
-        // Online mode with credentials
-        strlcpy((char *)wifi_config.sta.ssid, SSID, sizeof(wifi_config.sta.ssid));
-        strlcpy((char *)wifi_config.sta.password, Password, sizeof(wifi_config.sta.password));
+    dhcps_offer_t dhcps_dns_value = OFFER_DNS;
+    esp_netif_dhcps_option(wifiAP, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER,
+                           &dhcps_dns_value, sizeof(dhcps_dns_value));
 
-        strlcpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
-        ap_config.ap.ssid_len = strlen(ap_ssid);
-        // Copy password to AP config ONLY if auth mode requires it
-        if (auth_mode != WIFI_AUTH_OPEN) {
-             strlcpy((char *)ap_config.ap.password, Password, sizeof(ap_config.ap.password));
-        }
+    dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton("192.168.4.1");
+    dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
+    esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dnsserver);
 
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+    ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config));
 
-        dhcps_offer_t dhcps_dns_value = OFFER_DNS;
-        esp_netif_dhcps_option(wifiAP, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER,
-                               &dhcps_dns_value, sizeof(dhcps_dns_value));
+    ESP_ERROR_CHECK(esp_wifi_start());
 
-        dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton("192.168.4.1");
-        dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
-        esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dnsserver);
+    start_portal_webserver();
 
-        vTaskDelay(pdMS_TO_TICKS(100));
+    dns_server_config_t dns_config = {
+        .num_of_entries = 1,
+        .item = {{.name = "*", .if_key = NULL, .ip = {.addr = ESP_IP4TOADDR(192, 168, 4, 1)}}}};
 
-        ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &wifi_config));
-
-        ESP_ERROR_CHECK(esp_wifi_start());
-        vTaskDelay(pdMS_TO_TICKS(500));
-        esp_wifi_connect();
-        xEventGroupWaitBits(wifi_event_group, WIFI_CONNECTED_BIT, pdFALSE, pdTRUE,
-                            5000 / portTICK_PERIOD_MS);
-
-        ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config));
-
-        start_portal_webserver();
-
-        // Configure DNS server to handle both regular and .local domains
-        dns_server_config_t dns_config = {
-            .num_of_entries = 3,
-            .item = {
-                {.name = "*", .if_key = NULL, .ip = {.addr = ESP_IP4TOADDR(192, 168, 4, 1)}},
-                {.name = "ghostesp", .if_key = NULL, .ip = {.addr = ESP_IP4TOADDR(192, 168, 4, 1)}},
-                {.name = "ghostesp.local",
-                 .if_key = NULL,
-                 .ip = {.addr = ESP_IP4TOADDR(192, 168, 4, 1)}}}};
-
-        // Start DNS server
-        dns_handle = start_dns_server(&dns_config);
-        if (dns_handle) {
-            ESP_LOGI(TAG, "DNS server started, handling all requests including ghostesp.local");
-        } else {
-            ESP_LOGE(TAG, "Failed to start DNS server");
-            return ESP_FAIL;
-        }
-
-        // Configure DHCP to offer our DNS server
-        esp_netif_dhcps_option(wifiAP, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER,
-                               &dhcps_dns_value, sizeof(dhcps_dns_value));
-
-        // Set DNS server info
-        esp_netif_dns_info_t dns_info = {.ip.u_addr.ip4.addr = ESP_IP4TOADDR(192, 168, 4, 1),
-                                         .ip.type = ESP_IPADDR_TYPE_V4};
-        esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dns_info);
+    dns_handle = start_dns_server(&dns_config);
+    if (dns_handle) {
+        printf("DNS server started, all requests will be redirected to 192.168.4.1\n");
     } else {
-        // Offline mode or missing/invalid credentials -> Open AP
-        ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-        strlcpy((char *)ap_config.ap.ssid, ap_ssid, sizeof(ap_config.ap.ssid));
-        ap_config.ap.ssid_len = strlen(ap_ssid);
-        ap_config.ap.authmode = WIFI_AUTH_OPEN; // Explicitly OPEN
-        // Ensure password field is empty for OPEN auth
-        memset(ap_config.ap.password, 0, sizeof(ap_config.ap.password));
-
-        dhcps_offer_t dhcps_dns_value = OFFER_DNS;
-        esp_netif_dhcps_option(wifiAP, ESP_NETIF_OP_SET, ESP_NETIF_DOMAIN_NAME_SERVER,
-                               &dhcps_dns_value, sizeof(dhcps_dns_value));
-
-        dnsserver.ip.u_addr.ip4.addr = esp_ip4addr_aton("192.168.4.1");
-        dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
-        esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dnsserver);
-
-        ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config));
-
-        ESP_ERROR_CHECK(esp_wifi_start());
-
-        start_portal_webserver();
-
-        dns_server_config_t dns_config = {
-            .num_of_entries = 1,
-            .item = {{.name = "*", .if_key = NULL, .ip = {.addr = ESP_IP4TOADDR(192, 168, 4, 1)}}}};
-
-        dns_handle = start_dns_server(&dns_config);
-        if (dns_handle) {
-            printf("DNS server started, all requests will be redirected to 192.168.4.1\n");
-        } else {
-            printf("Failed to start DNS server\n");
-        }
+        printf("Failed to start DNS server\n");
     }
-
+    
     return ESP_OK; // Add return value at the end
 }
 
