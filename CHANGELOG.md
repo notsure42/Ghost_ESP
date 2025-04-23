@@ -7,6 +7,12 @@
 - Basic changeable SD Card pin out through webUI and serial command line
 - Added default portal directly in the firmware (credit to @breaching and @bigbrodude6119 on github)
 
+
+### 🤏 Tweaks and Improvements
+
+- Simplified the Evil Portal command line arguments. eg. ```startportal <google.html> (or <default>) <EVILAP> <PSK>```
+- Save credentials in flash when using connect command
+
 ### 🐛 Bug Fixes
 
 - Use "GhostNet" as fallback default webUI credentials if G_Settings fields are not set or invalid

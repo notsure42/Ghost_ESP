@@ -243,8 +243,8 @@ void handle_dial_command(int argc, char **argv) {
 
 void handle_wifi_connection(int argc, char **argv) {
     if (argc < 2) {
-        printf("Usage: %s \"<SSID>\" \"<PASSWORD>\"\n", argv[0]);
-        TERMINAL_VIEW_ADD_TEXT("Usage: %s \"<SSID>\" \"<PASSWORD>\"\n", argv[0]);
+        printf("Usage: %s \"<SSID>\" [\"<PASSWORD>\"]\n", argv[0]);
+        TERMINAL_VIEW_ADD_TEXT("Usage: %s \"<SSID>\" [\"<PASSWORD>\"]\n", argv[0]);
         return;
     }
 
@@ -357,8 +357,15 @@ void handle_wifi_connection(int argc, char **argv) {
         return;
     }
 
+    // Save the credentials to settings before connecting
+    settings_set_sta_ssid(&G_Settings, ssid);
+    settings_set_sta_password(&G_Settings, password);
+    settings_save(&G_Settings); // Save all settings including the new ones
+
     printf("Connecting to SSID: %s\n", ssid);
     TERMINAL_VIEW_ADD_TEXT("Connecting to SSID: %s\n", ssid);
+    printf("Credentials saved.\n");
+    TERMINAL_VIEW_ADD_TEXT("Credentials saved.\n");
 
     wifi_manager_connect_wifi(ssid, password);
 
@@ -1008,11 +1015,11 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("        -stop   : Stops the active capture\n\n");
 
     printf("connect\n");
-    printf("    Description: Connects to Specific WiFi Network\n");
-    printf("    Usage: connect <SSID> <Password>\n");
+    printf("    Description: Connects to Specific WiFi Network and saves credentials.\n");
+    printf("    Usage: connect <SSID> [Password]\n");
     TERMINAL_VIEW_ADD_TEXT("connect\n");
-    TERMINAL_VIEW_ADD_TEXT("    Description: Connects to Specific WiFi Network\n");
-    TERMINAL_VIEW_ADD_TEXT("    Usage: connect <SSID> <Password>\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Connects to Specific WiFi Network and saves credentials.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: connect <SSID> [Password]\n");
 
     printf("dialconnect\n");
     printf("    Description: Cast a Random Youtube Video on all Smart TV's on "
