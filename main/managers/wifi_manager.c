@@ -758,14 +758,17 @@ httpd_handle_t start_portal_webserver(void) {
 esp_err_t wifi_manager_start_evil_portal(const char *URLorFilePath, const char *SSID, const char *Password,
                                           const char *ap_ssid, const char *domain) {
     login_done = false; // Reset login state on start
-    // Copy the provided URL/FilePath or the special marker for default portal
-    if (URLorFilePath != NULL && strlen(URLorFilePath) < sizeof(PORTALURL)) {
-        strlcpy(PORTALURL, URLorFilePath, sizeof(PORTALURL)); 
+
+    // Check if we need to use the internal default portal
+    if (URLorFilePath != NULL && strcmp(URLorFilePath, "default") == 0) {
+        strcpy(PORTALURL, "INTERNAL_DEFAULT_PORTAL");
+    } else if (URLorFilePath != NULL && strlen(URLorFilePath) < sizeof(PORTALURL)) {
+        // If not default, copy the provided path
+        strlcpy(PORTALURL, URLorFilePath, sizeof(PORTALURL));
     } else {
-        ESP_LOGE(TAG, "Invalid or too long URL/FilePath provided for portal.");
-        // Consider setting a safe default or returning an error
-        // For now, let's try setting the internal default marker if invalid
-        strcpy(PORTALURL, "INTERNAL_DEFAULT_PORTAL"); 
+        // Handle invalid or too long paths by defaulting to internal portal as a fallback
+        ESP_LOGW(TAG, "Invalid or too long URL/FilePath provided, defaulting to internal portal.");
+        strcpy(PORTALURL, "INTERNAL_DEFAULT_PORTAL");
     }
 
     // Domain is fetched from settings in commandline.c, just copy it if provided

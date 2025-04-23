@@ -1102,55 +1102,24 @@
                 <div class="settings-section" id="evil-portal-section">
                     <h2>Evil Portal Settings</h2>
                     <div class="input-group">
-                        <label for="portal_offline_mode">Offline Mode 
+                        <label for="portal_url">File Path
                             <span class="tooltip">?
-                                <span class="tooltiptext">Toggle offline mode for the Evil Portal.</span>
+                                <span class="tooltiptext">Set as 'default' for the default embedded Evil Portal.</span>
                             </span>
                         </label>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="portal_offline_mode">
-                            <span class="slider"></span>
-                        </label>
+                        <input type="text" id="portal_url" placeholder="Enter file path">
                     </div>
                     <div class="input-group">
-                        <label for="portal_url">Website URL or File Path 
-                            <span class="tooltip">?
-                                <span class="tooltiptext">Enter the URL or file path for the Evil Portal.</span>
-                            </span>
-                        </label>
-                        <input type="text" id="portal_url" placeholder="Enter URL">
+                        <label for="portal_ap_ssid">Portal AP SSID</label>
+                        <input type="text" id="portal_ap_ssid" placeholder="Enter AP SSID">
                     </div>
                     <div class="input-group">
-                        <label for="portal_ssid">WiFi SSID 
+                        <label for="portal_password">Portal AP PSK
                             <span class="tooltip">?
-                                <span class="tooltiptext">Enter the SSID for the WiFi network used by the Evil Portal.</span>
+                                <span class="tooltiptext">Leave blank for an open portal.</span>
                             </span>
                         </label>
-                        <input type="text" id="portal_ssid" placeholder="Enter WiFi SSID">
-                    </div>
-                    <div class="input-group">
-                        <label for="portal_password">WiFi Password 
-                            <span class="tooltip">?
-                                <span class="tooltiptext">Enter the password for the WiFi network used by the Evil Portal.</span>
-                            </span>
-                        </label>
-                        <input type="text" id="portal_password" placeholder="Enter WiFi Password">
-                    </div>
-                    <div class="input-group">
-                        <label for="portal_ap_ssid">Evil Portal AP SSID 
-                            <span class="tooltip">?
-                                <span class="tooltiptext">Enter the SSID for the Access Point of the Evil Portal.</span>
-                            </span>
-                        </label>
-                        <input type="text" id="portal_ap_ssid" placeholder="Enter Evil Portal AP SSID">
-                    </div>
-                    <div class="input-group">
-                        <label for="portal_domain">Portal Domain 
-                            <span class="tooltip">?
-                                <span class="tooltiptext">Enter the domain name for the Evil Portal.</span>
-                            </span>
-                        </label>
-                        <input type="text" id="portal_domain" placeholder="Enter Domain">
+                        <input type="text" id="portal_password" placeholder="Enter AP PSK">
                     </div>
                     <button onclick="startevilportal()">Start Evil Portal</button>
                 </div>
@@ -1438,16 +1407,12 @@
                             <code>-a</code>: AP selection index (must be a valid number)
                         </li>
                         <li>
-                            <strong>startportal</strong>: Start a portal with specified parameters.<br>
-                            <strong>Usage:</strong> <code>startportal &lt;URL&gt; &lt;SSID&gt; &lt;Password&gt; &lt;AP_ssid&gt; &lt;Domain&gt;</code><br>
+                            <strong>startportal</strong>: Start an Evil Portal.<br>
+                            <strong>Usage:</strong> <code>startportal &lt;FilePath&gt; &lt;AP_SSID&gt; &lt;PSK&gt;</code><br>
                             <strong>Arguments:</strong><br>
-                            <code>&lt;URL&gt;</code>: URL for the portal<br>
-                            <code>&lt;SSID&gt;</code>: Wi-Fi SSID for the portal<br>
-                            <code>&lt;Password&gt;</code>: Wi-Fi password for the portal<br>
-                            <code>&lt;AP_ssid&gt;</code>: SSID for the access point<br>
-                            <code>&lt;Domain&gt;</code>: Custom domain to spoof in address bar<br>
-                            <em>OR</em><br>
-                            <strong>Offline Usage:</strong> <code>startportal &lt;FilePath&gt; &lt;AP_ssid&gt; &lt;Domain&gt;</code>
+                            <code>&lt;FilePath&gt;</code>: Local file path (e.g., index.html)<br>
+                            <code>&lt;AP_SSID&gt;</code>: SSID for the access point<br>
+                            <code>&lt;PSK&gt;</code>: PSK for the access point
                         </li>
                         <li>
                             <strong>stopportal</strong>: Stop the Evil Portal.<br>
@@ -1826,11 +1791,8 @@
 
                     // Evil Portal Settings
                     document.getElementById('portal_url').value = data.portal_url;
-                    document.getElementById('portal_ssid').value = data.portal_ssid;
-                    document.getElementById('portal_password').value = data.portal_password;
                     document.getElementById('portal_ap_ssid').value = data.portal_ap_ssid;
-                    document.getElementById('portal_domain').value = data.portal_domain;
-                    document.getElementById('portal_offline_mode').checked = data.portal_offline_mode;
+                    document.getElementById('portal_password').value = data.portal_password;
 
                     // Power Printer Settings
                     document.getElementById('printer_ip').value = data.printer_ip;
@@ -1871,11 +1833,8 @@
 
                 // Evil Portal Settings
                 portal_url: document.getElementById('portal_url').value,
-                portal_ssid: document.getElementById('portal_ssid').value,
-                portal_password: document.getElementById('portal_password').value,
                 portal_ap_ssid: document.getElementById('portal_ap_ssid').value,
-                portal_domain: document.getElementById('portal_domain').value,
-                portal_offline_mode: document.getElementById('portal_offline_mode').checked,
+                portal_password: document.getElementById('portal_password').value,
 
                 // Power Printer Settings
                 printer_ip: document.getElementById('printer_ip').value,
@@ -1928,33 +1887,22 @@
 
         // Function to send Evil Portal command to the ESP32
         function startevilportal() {
-            const PortalURL = document.getElementById('portal_url').value;
-            let PortalSSID = document.getElementById('portal_ssid').value;
-            let PortalPassword = document.getElementById('portal_password').value;
-            let PortalAPSSID = document.getElementById('portal_ap_ssid').value;
-            let PortalDomain = document.getElementById('portal_domain').value;
-
-            // Validate inputs
+            let filePath = document.getElementById('portal_url').value.trim();
+            const apSsid = document.getElementById('portal_ap_ssid').value.trim();
+            const psk = document.getElementById('portal_password').value.trim();
             const errors = [];
-            if (PortalURL === '') errors.push('Please enter a Portal URL or File Path.');
-            if (PortalSSID === '') errors.push('Please enter a Portal SSID.');
-            if (PortalPassword === '') errors.push('Please enter a Portal Password.');
-            if (PortalAPSSID === '') errors.push('Please enter a Portal AP SSID.');
-            if (PortalDomain === '') errors.push('Please enter a Portal Domain.');
-
+            if (!apSsid) errors.push('Please enter an AP SSID.');
             if (errors.length > 0) {
                 alert('Please correct the following errors:\n' + errors.join('\n'));
                 return;
             }
-
-            // Wrap parameters in double quotes if they contain spaces
-            PortalSSID = wrapInQuotesIfNeeded(PortalSSID);
-            PortalPassword = wrapInQuotesIfNeeded(PortalPassword);
-            PortalAPSSID = wrapInQuotesIfNeeded(PortalAPSSID);
-            PortalDomain = wrapInQuotesIfNeeded(PortalDomain);
-
-            const command = `startportal ${PortalURL} ${PortalSSID} ${PortalPassword} ${PortalAPSSID} ${PortalDomain}`;
-
+            if (!filePath) {
+                filePath = 'default';
+            }
+            const finalPath = wrapInQuotesIfNeeded(filePath);
+            const finalSsid = wrapInQuotesIfNeeded(apSsid);
+            const finalPsk = wrapInQuotesIfNeeded(psk); 
+            const command = `startportal ${finalPath} ${finalSsid} ${finalPsk}`;
             fetch('/api/command', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -1962,12 +1910,12 @@
             })
             .then(response => {
                 if (response.ok) {
-                    alert('Evil Portal Executed Successfully... You Are now Disconnected From GhostNet');
+                    alert('Evil Portal executed successfully.');
                 } else {
-                    alert('Error Sending Evil Portal Command...');
+                    alert('Error sending Evil Portal command.');
                 }
             })
-            .catch(error => console.error('Error Sending Evil Portal Command...', error));
+            .catch(error => console.error('Error sending Evil Portal command:', error));
         }
 
         // Function to validate settings before saving
