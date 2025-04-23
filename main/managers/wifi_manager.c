@@ -333,6 +333,9 @@ ECompany match_bssid_to_company(const uint8_t *bssid) {
     return COMPANY_UNKNOWN;
 }
 
+// Helper macro to check for broadcast/multicast addresses
+#define IS_BROADCAST_OR_MULTICAST(addr) (((addr)[0] & 0x01) || (memcmp((addr), "\xff\xff\xff\xff\xff\xff", 6) == 0))
+
 void wifi_stations_sniffer_callback(void *buf, wifi_promiscuous_pkt_type_t type) {
     if (type != WIFI_PKT_DATA) {
         return;
@@ -342,17 +345,38 @@ void wifi_stations_sniffer_callback(void *buf, wifi_promiscuous_pkt_type_t type)
     const wifi_ieee80211_packet_t *ipkt = (wifi_ieee80211_packet_t *)packet->payload;
     const wifi_ieee80211_hdr_t *hdr = &ipkt->hdr;
 
-    const uint8_t *src_mac = hdr->addr2;  // Station MAC
-    const uint8_t *dest_mac = hdr->addr1; // AP BSSID
+    // Extract Frame Control fields
+    wifi_ieee80211_frame_ctrl_t *fc = (wifi_ieee80211_frame_ctrl_t *)&hdr->frame_ctrl;
 
-    printf(
-        "station MAC: %02X:%02X:%02X:%02X:%02X:%02X -> AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
-        src_mac[0], src_mac[1], src_mac[2], src_mac[3], src_mac[4], src_mac[5], dest_mac[0],
-        dest_mac[1], dest_mac[2], dest_mac[3], dest_mac[4], dest_mac[5]);
-    
-    // check if this station-ap pair already exists before adding it
-    if (!station_exists(src_mac, dest_mac)) {
-        add_station_ap_pair(src_mac, dest_mac);
+    const uint8_t *station_mac = NULL;
+    const uint8_t *ap_bssid = NULL;
+
+    // Determine Station MAC and AP BSSID based on frame direction
+    if (fc->to_ds == 1 && fc->from_ds == 0) {
+        // Frame from Station to AP
+        ap_bssid = hdr->addr1;
+        station_mac = hdr->addr2;
+    } else if (fc->to_ds == 0 && fc->from_ds == 1) {
+        // Frame from AP to Station
+        station_mac = hdr->addr1;
+        ap_bssid = hdr->addr2;
+    } else {
+        // Ignore Ad-hoc (IBSS) and WDS frames for this purpose
+        return;
+    }
+
+    // Validate addresses: Ignore if either is broadcast/multicast
+    if (IS_BROADCAST_OR_MULTICAST(station_mac) || IS_BROADCAST_OR_MULTICAST(ap_bssid)) {
+        return;
+    }
+
+    // Check if this station-ap pair already exists before adding and printing it
+    if (!station_exists(station_mac, ap_bssid)) {
+        printf(
+            "station MAC: %02X:%02X:%02X:%02X:%02X:%02X -> AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
+            station_mac[0], station_mac[1], station_mac[2], station_mac[3], station_mac[4], station_mac[5], 
+            ap_bssid[0], ap_bssid[1], ap_bssid[2], ap_bssid[3], ap_bssid[4], ap_bssid[5]);
+        add_station_ap_pair(station_mac, ap_bssid);
     }
 }
 
