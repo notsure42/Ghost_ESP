@@ -5,7 +5,7 @@
 ### ❤️ New Stuff
 
 - Basic changeable SD Card pin out through webUI and serial command line
-- Added default portal directly in the firmware
+- Added default portal directly in the firmware (credit to @breaching and @bigbrodude6119 on github)
 
 ### 🐛 Bug Fixes
 
