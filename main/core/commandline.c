@@ -429,14 +429,15 @@ void handle_ble_scan_cmd(int argc, char **argv) {
 #endif
 
 void handle_start_portal(int argc, char **argv) {
-    if (argc != 4) {
-        printf("Usage: %s <FilePath> <AP_SSID> <PSK>\n", argv[0]);
-        TERMINAL_VIEW_ADD_TEXT("Usage: %s <FilePath> <AP_SSID> <PSK>\n", argv[0]);
+    if (argc < 3 || argc > 4) { // Accept 3 or 4 arguments
+        printf("Usage: %s <FilePath> <AP_SSID> [PSK]\n", argv[0]);
+        TERMINAL_VIEW_ADD_TEXT("Usage: %s <FilePath> <AP_SSID> [PSK]\n", argv[0]);
+        TERMINAL_VIEW_ADD_TEXT("PSK is optional for an open AP.\n");
         return;
     }
     const char *url = argv[1];
     const char *ap_ssid = argv[2];
-    const char *psk = argv[3];
+    const char *psk = (argc == 4) ? argv[3] : ""; // Set PSK to empty if not provided
     if (strlen(url) >= MAX_PORTAL_PATH_LEN) {
         printf("Error: Provided Path is too long.\n");
         TERMINAL_VIEW_ADD_TEXT("Error: Path too long.\n");
@@ -462,7 +463,7 @@ void handle_start_portal(int argc, char **argv) {
     }
     const char *domain = settings_get_portal_domain(&G_Settings);
     printf("Starting portal with AP_SSID: %s, PSK: %s, Domain: %s\n", ap_ssid, psk, domain ? domain : "(default)");
-    TERMINAL_VIEW_ADD_TEXT("Starting portal...\nAP: %s\nPSK: %s\nDomain: %s\n", ap_ssid, psk, domain ? domain : "(default)");
+    TERMINAL_VIEW_ADD_TEXT("Starting portal...\nAP: %s\nPSK: %s\nDomain: %s\n", ap_ssid, (strlen(psk) > 0 ? psk : "<Open>"), domain ? domain : "(default)");
     wifi_manager_start_evil_portal(final_url_or_path, NULL, psk, ap_ssid, domain);
 }
 
@@ -955,12 +956,14 @@ void handle_help(int argc, char **argv) {
     printf("    Description: Start an Evil Portal using a local file or the default embedded page.\n");
     printf("                 /mnt/ prefix is added automatically to file paths if missing.\n");
     printf("    Usage: startportal [FilePath] [AP_SSID] [PSK]\n");
+    printf("           PSK is optional for an open network.\n");
     printf("    Use 'default' as the file path for the default Evil Portal.");
     TERMINAL_VIEW_ADD_TEXT("startportal\n");
     TERMINAL_VIEW_ADD_TEXT("    Desc: Start Evil Portal.\n");
     TERMINAL_VIEW_ADD_TEXT("          Use 'default' as the file path for the default Evil Portal.\n");
     TERMINAL_VIEW_ADD_TEXT("          /mnt/ added to paths automatically.\n");
     TERMINAL_VIEW_ADD_TEXT("    Usage: startportal [FilePath] [AP_SSID] [PSK]\n");
+    TERMINAL_VIEW_ADD_TEXT("           PSK is optional for an open network.\n");
 
 
     printf("stopportal\n");
