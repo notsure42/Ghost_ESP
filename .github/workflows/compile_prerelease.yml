@@ -143,7 +143,7 @@ jobs:
         run: |
           mkdir -p release_assets
           # Find all .zip files directly within the downloaded artifact directories and copy them
-          find all_build_artifacts/build_* -maxdepth 1 -name '*.zip' -exec cp {} release_assets/ \\;
+          find all_build_artifacts/build_* -maxdepth 1 -name '*.zip' -exec cp {} release_assets/ \;
           echo "Prepared release assets:"
           ls -lh release_assets
 
