@@ -107,7 +107,7 @@ static void sdmmc_card_print_info(const sdmmc_card_t *card) {
 }
 
 esp_err_t sd_card_init(void) {
-  esp_err_t ret;
+  esp_err_t ret = ESP_FAIL;
 
   // Load configuration from NVS first
   sd_card_load_config();
