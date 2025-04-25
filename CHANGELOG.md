@@ -1,6 +1,6 @@
 # Ghost ESP Changelog
 
-## Revival v1.4.8
+## Revival v1.4.9
 
 ### ❤️ New Stuff
 
@@ -12,6 +12,9 @@
 - Simplified the Evil Portal command line arguments.
   - eg. ```startportal <google.html> (or <default>) <EVILAP> <PSK>```
 - Save credentials in flash when using connect command
+- Captive portal now supports Android devices
+- Simplified the evil-portal command line arguments.
+- set LWIP_MAX_SOCKETS to 20 instead of 10
 
 ### 🐛 Bug Fixes
 
@@ -19,7 +22,6 @@
 - Fix webUI not using evilportal command line arguments
 - Fix evil‑portal local file serving 
 - Correctly parse station/AP MACs and ignore broadcast/multicast in Station Scan
-
 
 ----------------------
 
