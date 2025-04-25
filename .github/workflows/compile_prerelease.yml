@@ -142,8 +142,8 @@ jobs:
       - name: Verify and Prepare Artifacts for Upload
         run: |
           mkdir -p release_assets
-          # Find all artifact directories (build_*) and copy the zip file from each
-          find all_build_artifacts -mindepth 1 -maxdepth 1 -type d -name 'build_*' -exec find {} -name '*.zip' -exec cp {} release_assets/ \;
+          # Find all .zip files directly within the downloaded artifact directories and copy them
+          find all_build_artifacts/build_* -maxdepth 1 -name '*.zip' -exec cp {} release_assets/ \\;
           echo "Prepared release assets:"
           ls -lh release_assets
 
