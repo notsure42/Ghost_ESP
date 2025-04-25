@@ -14,7 +14,8 @@
 - Save credentials in flash when using connect command
 - Captive portal now supports Android devices
 - Simplified the evil-portal command line arguments.
-- set LWIP_MAX_SOCKETS to 20 instead of 10
+- set LWIP_MAX_SOCKETS to 16 instead of 10
+- Save captured evil portal credentials to SD card if available
 
 ### 🐛 Bug Fixes
 

@@ -509,6 +509,7 @@ esp_err_t sd_card_setup_directory_structure() {
   const char *scans_dir = "/mnt/ghostesp/scans";
   const char *gps_dir = "/mnt/ghostesp/gps";
   const char *games_dir = "/mnt/ghostesp/games";
+  const char *evil_portal_dir = "/mnt/ghostesp/evil_portal";
 
   if (!sd_card_exists(root_dir)) {
     printf("Creating directory: %s\n", root_dir);
@@ -580,6 +581,19 @@ esp_err_t sd_card_setup_directory_structure() {
     }
   } else {
     printf("Directory %s already exists\n", scans_dir);
+  }
+
+  // Create evil_portal directory
+  if (!sd_card_exists(evil_portal_dir)) {
+    printf("Creating directory: %s\n", evil_portal_dir);
+    esp_err_t ret = sd_card_create_directory(evil_portal_dir);
+    if (ret != ESP_OK) {
+      printf("Failed to create directory %s: %s\n", evil_portal_dir,
+             esp_err_to_name(ret));
+      return ret;
+    }
+  } else {
+    printf("Directory %s already exists\n", evil_portal_dir);
   }
 
   printf("Directory structure successfully set up.\n");

