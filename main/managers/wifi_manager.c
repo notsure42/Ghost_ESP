@@ -729,8 +729,8 @@ esp_err_t captive_portal_redirect_handler(httpd_req_t *req) {
 
 httpd_handle_t start_portal_webserver(void) {
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.max_uri_handlers = 16;
-    config.max_open_sockets = 20; // Increased from 7
+    config.max_uri_handlers = 13;
+    config.max_open_sockets = 13; // Increased from 7
     config.backlog_conn = 10;     // Increased from 7
     config.stack_size = 8192;
     if (httpd_start(&evilportal_server, &config) == ESP_OK) {
