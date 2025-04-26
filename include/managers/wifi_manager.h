@@ -118,6 +118,12 @@ void wifi_manager_stop_scan();
 // Print the scan results with BSSID to company mapping
 void wifi_manager_print_scan_results_with_oui();
 
+// Function to provide access to the last scan results
+void wifi_manager_get_scan_results_data(uint16_t *count, wifi_ap_record_t **aps);
+
+// Select an access point from the scan results based on index
+void wifi_manager_select_ap(int index);
+
 // broadcast ap beacon with optional ssid
 esp_err_t wifi_manager_broadcast_ap(const char *ssid);
 
@@ -138,8 +144,6 @@ void wifi_manager_start_monitor_mode(wifi_promiscuous_cb_t_t callback);
 void wifi_manager_list_stations();
 
 void wifi_manager_start_deauth();
-
-void wifi_manager_select_ap(int index);
 
 void wifi_manager_stop_deauth();
 

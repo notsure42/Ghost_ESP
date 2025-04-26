@@ -1514,6 +1514,63 @@ void handle_sd_save_config(int argc, char **argv) {
   sd_card_save_config();
 }
 
+void handle_congestion_cmd(int argc, char **argv) {
+    wifi_manager_start_scan();
+
+    uint16_t ap_count = 0;
+    wifi_ap_record_t *ap_records = NULL;
+
+    wifi_manager_get_scan_results_data(&ap_count, &ap_records);
+
+    if (ap_count == 0 || ap_records == NULL) {
+        printf("No APs found during scan.\n");
+        TERMINAL_VIEW_ADD_TEXT("No APs found during scan.\n");
+        return;
+    }
+
+    int channel_counts[14] = {0};
+    int max_count = 0;
+    for (int i = 0; i < ap_count; i++) {
+        if (ap_records[i].primary >= 1 && ap_records[i].primary <= 14) { 
+            int channel_index = ap_records[i].primary - 1;
+            channel_counts[channel_index]++;
+            if (channel_counts[channel_index] > max_count) {
+                max_count = channel_counts[channel_index];
+            }
+        }
+    }
+
+    printf("\nChannel Congestion:\n\n");
+    TERMINAL_VIEW_ADD_TEXT("\nChannel Congestion:\n\n");
+    printf("+--+-------+------------+\n");
+    TERMINAL_VIEW_ADD_TEXT("+--+-------+------------+\n");
+    printf("|CH| Count | Bar        |\n");
+    TERMINAL_VIEW_ADD_TEXT("|CH| Count | Bar        |\n");
+    printf("+--+-------+------------+\n");
+    TERMINAL_VIEW_ADD_TEXT("+--+-------+------------+\n");
+
+    const int max_bar_length = 10;
+    char bar_string[max_bar_length + 1];
+
+    for (int i = 0; i < 14; i++) {
+        if (channel_counts[i] > 0) {
+            int bar_length = 0;
+            if (max_count > 0) { // Avoid division by zero
+                 bar_length = (int)(((float)channel_counts[i] / max_count) * max_bar_length);
+                 if (bar_length == 0) bar_length = 1; // Ensure at least one bar if count > 0
+            }
+            
+            memset(bar_string, '#', bar_length);
+            bar_string[bar_length] = '\0';
+
+            printf("|%-2d| %-5d | %-*s |\n", i + 1, channel_counts[i], max_bar_length, bar_string);
+            TERMINAL_VIEW_ADD_TEXT("|%-2d| %-5d | %-*s |\n", i + 1, channel_counts[i], max_bar_length, bar_string);
+        }
+    }
+    printf("+--+-------+------------+\n");
+    TERMINAL_VIEW_ADD_TEXT("+--+-------+------------+\n");
+}
+
 void register_commands() {
     register_command("help", handle_help);
     register_command("scanap", cmd_wifi_scan_start);
@@ -1538,6 +1595,7 @@ void register_commands() {
     register_command("startwd", handle_startwd);
     register_command("gpsinfo", handle_gps_info);
     register_command("scanports", handle_scan_ports);
+    register_command("congestion", handle_congestion_cmd);
 #ifndef CONFIG_IDF_TARGET_ESP32S2
     register_command("blescan", handle_ble_scan_cmd);
     register_command("blewardriving", handle_ble_wardriving);

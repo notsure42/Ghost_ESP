@@ -2504,3 +2504,9 @@ void wifi_manager_start_beacon(const char *ssid) {
         TERMINAL_VIEW_ADD_TEXT("Beacon transmission already running.\n");
     }
 }
+
+// Function to provide access to the last scan results
+void wifi_manager_get_scan_results_data(uint16_t *count, wifi_ap_record_t **aps) {
+    *count = ap_count;
+    *aps = scanned_aps;
+}

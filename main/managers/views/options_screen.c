@@ -57,6 +57,7 @@ static const char *wifi_options[] = {"Scan Access Points",
                                      "PineAP Detection",
                                      "Scan Open Ports",
                                      "Reset AP Credentials",
+                                     "Channel Congestion",
                                      "Go Back",
                                      NULL};
 
@@ -521,6 +522,12 @@ void option_event_cb(lv_event_t *e) {
         set_number_pad_mode(NP_MODE_LAN);
         display_manager_switch_view(&number_pad_view);
         vTaskDelay(pdMS_TO_TICKS(10));
+    }
+
+    if (strcmp(Selected_Option, "Channel Congestion") == 0) {
+        display_manager_switch_view(&terminal_view);
+        vTaskDelay(pdMS_TO_TICKS(10));
+        simulateCommand("congestion");
     }
 }
 
