@@ -1522,15 +1522,20 @@ void handle_congestion_cmd(int argc, char **argv) {
 
     printf("\nChannel Congestion:\n\n");
     TERMINAL_VIEW_ADD_TEXT("\nChannel Congestion:\n\n");
-    printf("+--+-------+------------+\n");
-    TERMINAL_VIEW_ADD_TEXT("+--+-------+------------+\n");
-    printf("|CH| Count | Bar        |\n");
-    TERMINAL_VIEW_ADD_TEXT("|CH| Count | Bar        |\n");
-    printf("+--+-------+------------+\n");
-    TERMINAL_VIEW_ADD_TEXT("+--+-------+------------+\n");
+    const char* header = "┌──┬───────┬────────────┐\n";
+    const char* separator = "├──┼───────┼────────────┤\n";
+    const char* row_format = "│%-2d│ %-5d │ %s │\n";
+    const char* footer = "└──┴───────┴────────────┘\n";
+
+    printf("%s", header);
+    TERMINAL_VIEW_ADD_TEXT("%s", header);
+    printf("│CH│ Count │ Bar        │\n");
+    TERMINAL_VIEW_ADD_TEXT("│CH│ Count │ Bar        │\n");
+    printf("%s", separator);
+    TERMINAL_VIEW_ADD_TEXT("%s", separator);
 
     const int max_bar_length = 10;
-    char bar_string[max_bar_length + 1];
+    char display_bar[max_bar_length * 4]; // Generous buffer: 3 bytes/block + 1 space/pad + null
 
     for (int i = 0; i < 14; i++) {
         if (channel_counts[i] > 0) {
@@ -1540,15 +1545,28 @@ void handle_congestion_cmd(int argc, char **argv) {
                  if (bar_length == 0) bar_length = 1; // Ensure at least one bar if count > 0
             }
             
-            memset(bar_string, '#', bar_length);
-            bar_string[bar_length] = '\0';
+            // Build the display string with blocks and padding spaces
+            char *ptr = display_bar;
 
-            printf("|%-2d| %-5d | %-*s |\n", i + 1, channel_counts[i], max_bar_length, bar_string);
-            TERMINAL_VIEW_ADD_TEXT("|%-2d| %-5d | %-*s |\n", i + 1, channel_counts[i], max_bar_length, bar_string);
+            // Add block characters
+            for (int j = 0; j < bar_length; ++j) {
+                memcpy(ptr, "█", 3); // Copy 3 bytes for UTF-8 block
+                ptr += 3;
+            }
+
+            // Add padding spaces to fill up to max_bar_length visual columns
+            int spaces_needed = max_bar_length - bar_length;
+            for (int j = 0; j < spaces_needed; ++j) {
+                 *ptr++ = ' ';
+            }
+            *ptr = '\0'; // Null-terminate
+
+            printf(row_format, i + 1, channel_counts[i], display_bar);
+            TERMINAL_VIEW_ADD_TEXT(row_format, i + 1, channel_counts[i], display_bar);
         }
     }
-    printf("+--+-------+------------+\n");
-    TERMINAL_VIEW_ADD_TEXT("+--+-------+------------+\n");
+    printf("%s", footer);
+    TERMINAL_VIEW_ADD_TEXT("%s", footer);
 }
 
 void register_commands() {
