@@ -18,6 +18,7 @@
 - set LWIP_MAX_SOCKETS to 16 instead of 10
 - Save captured evil portal credentials to SD card if available
 - Added support for scanning aps for a specific amount of time eg. ```scanap 10```
+- Connect command now uses saved credentials from flash when no arguments are provided
 
 ### 🐛 Bug Fixes
 
