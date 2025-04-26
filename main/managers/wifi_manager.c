@@ -37,6 +37,10 @@
 #include "managers/default_portal.h"
 #include "freertos/task.h"
 
+// Defines for Station Scan Channel Hopping
+#define SCANSTA_CHANNEL_HOP_INTERVAL_MS 250 // Hop channel every 250ms
+#define SCANSTA_MAX_WIFI_CHANNEL 13         // Scan channels 1-13
+
 #define MAX_DEVICES 255
 #define CHUNK_SIZE 8192
 #define MDNS_NAME_BUF_LEN 65
@@ -62,6 +66,15 @@ static uint32_t deauth_packets_sent = 0;
 static bool login_done = false;
 static char current_creds_filename[128] = "";
 static char current_keystrokes_filename[128] = "";
+
+// Station Scan Channel Hopping Globals
+static esp_timer_handle_t scansta_channel_hop_timer = NULL;
+static uint8_t scansta_current_channel = 1;
+static bool scansta_hopping_active = false;
+
+// Forward declarations for static channel hopping functions
+static esp_err_t start_scansta_channel_hopping(void);
+static void stop_scansta_channel_hopping(void);
 
 struct service_info {
     const char *query;
@@ -942,6 +955,13 @@ void wifi_manager_stop_monitor_mode() {
     ESP_ERROR_CHECK(esp_wifi_set_promiscuous(false));
     printf("WiFi monitor stopped.\n");
     TERMINAL_VIEW_ADD_TEXT("WiFi monitor stopped.\n");
+
+    // Stop the station scan channel hopping timer if it's active
+    if (scansta_hopping_active) {
+        stop_scansta_channel_hopping();
+    }
+
+    // NOTE: Stopping the PineAP timer (channel_hop_timer) is handled by stop_pineap_detection() in callbacks.c
 }
 
 void wifi_manager_init(void) {
@@ -2546,4 +2566,68 @@ void wifi_manager_start_scan_with_time(int seconds) {
     wifi_manager_stop_scan();
     ESP_ERROR_CHECK(esp_wifi_stop());
     ESP_ERROR_CHECK(ap_manager_start_services());
+}
+
+// Station Scan Channel Hopping Callback
+static void scansta_channel_hop_timer_callback(void *arg) {
+    if (!scansta_hopping_active) return; // Check if hopping should be active
+
+    scansta_current_channel = (scansta_current_channel % SCANSTA_MAX_WIFI_CHANNEL) + 1;
+    esp_wifi_set_channel(scansta_current_channel, WIFI_SECOND_CHAN_NONE);
+    // ESP_LOGI(TAG, "Station Scan Hopped to Channel: %d", scansta_current_channel); // Optional: for debugging
+}
+
+// Start the channel hopping timer for station scanning
+static esp_err_t start_scansta_channel_hopping(void) {
+    if (scansta_channel_hop_timer != NULL) {
+        ESP_LOGW(TAG, "Scansta channel hop timer already exists. Stopping and deleting first.");
+        esp_timer_stop(scansta_channel_hop_timer);
+        esp_timer_delete(scansta_channel_hop_timer);
+        scansta_channel_hop_timer = NULL;
+    }
+
+    scansta_current_channel = 1; // Start from channel 1
+    esp_wifi_set_channel(scansta_current_channel, WIFI_SECOND_CHAN_NONE); // Set initial channel
+
+    esp_timer_create_args_t timer_args = {
+        .callback = scansta_channel_hop_timer_callback,
+        .name = "scansta_channel_hop"
+    };
+
+    esp_err_t err = esp_timer_create(&timer_args, &scansta_channel_hop_timer);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to create scansta channel hop timer: %s", esp_err_to_name(err));
+        return err;
+    }
+
+    err = esp_timer_start_periodic(scansta_channel_hop_timer, SCANSTA_CHANNEL_HOP_INTERVAL_MS * 1000);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to start scansta channel hop timer: %s", esp_err_to_name(err));
+        esp_timer_delete(scansta_channel_hop_timer); // Clean up timer if start fails
+        scansta_channel_hop_timer = NULL;
+        return err;
+    }
+
+    scansta_hopping_active = true;
+    ESP_LOGI(TAG, "Station Scan Channel Hopping Started.");
+    return ESP_OK;
+}
+
+// Stop the channel hopping timer for station scanning
+static void stop_scansta_channel_hopping(void) {
+    if (scansta_channel_hop_timer) {
+        esp_timer_stop(scansta_channel_hop_timer);
+        esp_timer_delete(scansta_channel_hop_timer);
+        scansta_channel_hop_timer = NULL;
+        scansta_hopping_active = false;
+        ESP_LOGI(TAG, "Station Scan Channel Hopping Stopped.");
+    }
+}
+
+// Function to specifically start station scanning with channel hopping
+void wifi_manager_start_station_scan() {
+    wifi_manager_start_monitor_mode(wifi_stations_sniffer_callback);
+    start_scansta_channel_hopping(); // Start the channel hopper for station scan
+    printf("Started Station Scan (Channel Hopping Enabled)...\n");
+    TERMINAL_VIEW_ADD_TEXT("Started Station Scan (Hopping)...\n");
 }

@@ -161,9 +161,7 @@ void handle_stop_spam(int argc, char **argv) {
 }
 
 void handle_sta_scan(int argc, char **argv) {
-    wifi_manager_start_monitor_mode(wifi_stations_sniffer_callback);
-    printf("Started Station Scan...\n");
-    TERMINAL_VIEW_ADD_TEXT("Started Station Scan...\n");
+    wifi_manager_start_station_scan();
 }
 
 void handle_attack_cmd(int argc, char **argv) {
@@ -844,10 +842,10 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("    Usage: scanap [seconds]\n\n");
 
     printf("scansta\n");
-    printf("    Description: Start scanning for Wi-Fi stations.\n");
+    printf("    Description: Start scanning for Wi-Fi stations (hops channels).\n");
     printf("    Usage: scansta\n\n");
     TERMINAL_VIEW_ADD_TEXT("scansta\n");
-    TERMINAL_VIEW_ADD_TEXT("    Description: Start scanning for Wi-Fi stations.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Start scanning for Wi-Fi stations (hops channels).\n");
     TERMINAL_VIEW_ADD_TEXT("    Usage: scansta\n\n");
 
     printf("stopscan\n");

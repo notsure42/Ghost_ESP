@@ -143,6 +143,9 @@ void wifi_manager_start_monitor_mode(wifi_promiscuous_cb_t_t callback);
 
 void wifi_manager_list_stations();
 
+// Start station scanning with channel hopping
+void wifi_manager_start_station_scan();
+
 void wifi_manager_start_deauth();
 
 void wifi_manager_stop_deauth();
