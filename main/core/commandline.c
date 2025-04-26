@@ -1028,6 +1028,17 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("    Arguments:\n");
     TERMINAL_VIEW_ADD_TEXT("        -s  : Stop BLE wardriving\n\n");
 
+    printf("pineap\n");
+    printf("    Description: Start/Stop detecting WiFi Pineapples.\n");
+    printf("    Usage: pineap [-s]\n");
+    printf("    Arguments:\n");
+    printf("        -s  : Stop PineAP detection\n\n");
+    TERMINAL_VIEW_ADD_TEXT("pineap\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Start/Stop detecting WiFi Pineapples.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: pineap [-s]\n");
+    TERMINAL_VIEW_ADD_TEXT("    Arguments:\n");
+    TERMINAL_VIEW_ADD_TEXT("        -s  : Stop PineAP detection\n\n");
+
     printf("Port Scanner\n");
     printf("    Description: Scan ports on local subnet or specific IP\n");
     printf("    Usage: scanports local [-C/-A/start_port-end_port]\n");
