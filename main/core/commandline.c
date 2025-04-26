@@ -1047,6 +1047,13 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("        -A  : Scan all ports (1-65535)\n");
     TERMINAL_VIEW_ADD_TEXT("        start_port-end_port : Custom port range (e.g. 80-443)\n\n");
 
+    printf("congestion\n");
+    printf("    Description: Display Wi-Fi channel congestion chart.\n");
+    printf("    Usage: congestion\n\n");
+    TERMINAL_VIEW_ADD_TEXT("congestion\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Display Wi-Fi channel congestion chart.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: congestion\n\n");
+
     printf("apcred\n");
     printf("    Description: Change or reset the GhostNet AP credentials\n");
     printf("    Usage: apcred <ssid> <password>\n");

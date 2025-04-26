@@ -10,13 +10,13 @@
 
 ### 🤏 Tweaks and Improvements
 
-- Simplified the Evil Portal command line arguments.
+- Simplified the evil-portal command line arguments.
   - eg. ```startportal <google.html> (or <default>) <EVILAP> <PSK>```
 - Save credentials in flash when using connect command
 - Captive portal now supports Android devices
 - Simplified the evil-portal command line arguments.
 - set LWIP_MAX_SOCKETS to 16 instead of 10
-- Save captured evil portal credentials to SD card if available
+- Save captured evil-portal credentials to SD card if available
 - Added support for scanning aps for a specific amount of time eg. ```scanap 10```
 - Connect command now uses saved credentials from flash when no arguments are provided
 
