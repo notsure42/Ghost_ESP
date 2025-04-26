@@ -19,6 +19,7 @@
 - Save captured evil-portal credentials to SD card if available
 - Added support for scanning aps for a specific amount of time eg. ```scanap 10```
 - Connect command now uses saved credentials from flash when no arguments are provided
+- Added channel hopping to station scan
 
 ### 🐛 Bug Fixes
 
