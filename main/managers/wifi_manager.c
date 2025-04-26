@@ -35,6 +35,7 @@
 #include "core/utils.h" // Add utils include
 #include <inttypes.h>
 #include "managers/default_portal.h"
+#include "freertos/task.h"
 
 #define MAX_DEVICES 255
 #define CHUNK_SIZE 8192
@@ -2509,4 +2510,40 @@ void wifi_manager_start_beacon(const char *ssid) {
 void wifi_manager_get_scan_results_data(uint16_t *count, wifi_ap_record_t **aps) {
     *count = ap_count;
     *aps = scanned_aps;
+}
+
+void wifi_manager_start_scan_with_time(int seconds) {
+    ap_manager_stop_services();
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+    ESP_ERROR_CHECK(esp_wifi_start());
+
+    wifi_scan_config_t scan_config = {
+        .ssid = NULL,
+        .bssid = NULL,
+        .channel = 0,
+        .show_hidden = true
+    };
+
+    rgb_manager_set_color(&rgb_manager, 0, 50, 255, 50, false);
+
+    printf("WiFi Scan started\n");
+    printf("Please wait %d Seconds...\n", seconds);
+    TERMINAL_VIEW_ADD_TEXT("WiFi Scan started\n");
+    {
+        char buf[64]; snprintf(buf, sizeof(buf), "Please wait %d Seconds...\n", seconds);
+        TERMINAL_VIEW_ADD_TEXT(buf);
+    }
+
+    esp_err_t err = esp_wifi_scan_start(&scan_config, false);
+    if (err != ESP_OK) {
+        printf("WiFi scan failed to start: %s\n", esp_err_to_name(err));
+        TERMINAL_VIEW_ADD_TEXT("WiFi scan failed to start\n");
+        return;
+    }
+
+    vTaskDelay(pdMS_TO_TICKS(seconds * 1000));
+
+    wifi_manager_stop_scan();
+    ESP_ERROR_CHECK(esp_wifi_stop());
+    ESP_ERROR_CHECK(ap_manager_start_services());
 }

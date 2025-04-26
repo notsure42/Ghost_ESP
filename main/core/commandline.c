@@ -86,7 +86,12 @@ CommandFunction find_command(const char *name) {
 }
 
 void cmd_wifi_scan_start(int argc, char **argv) {
-    wifi_manager_start_scan();
+    if (argc > 1) {
+        int seconds = atoi(argv[1]);
+        wifi_manager_start_scan_with_time(seconds);
+    } else {
+        wifi_manager_start_scan();
+    }
     wifi_manager_print_scan_results_with_oui();
 }
 
@@ -865,10 +870,10 @@ void handle_help(int argc, char **argv) {
 
     printf("scanap\n");
     printf("    Description: Start a Wi-Fi access point (AP) scan.\n");
-    printf("    Usage: scanap\n\n");
+    printf("    Usage: scanap [seconds]\n\n");
     TERMINAL_VIEW_ADD_TEXT("scanap\n");
     TERMINAL_VIEW_ADD_TEXT("    Description: Start a Wi-Fi access point (AP) scan.\n");
-    TERMINAL_VIEW_ADD_TEXT("    Usage: scanap\n\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: scanap [seconds]\n\n");
 
     printf("scansta\n");
     printf("    Description: Start scanning for Wi-Fi stations.\n");

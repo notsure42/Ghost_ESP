@@ -245,4 +245,6 @@ static const uint16_t COMMON_PORTS[] = {
 };
 #define NUM_PORTS (sizeof(COMMON_PORTS) / sizeof(COMMON_PORTS[0]))
 
+void wifi_manager_start_scan_with_time(int seconds);
+
 #endif // WIFI_MANAGER_H
