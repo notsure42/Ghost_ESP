@@ -2305,17 +2305,27 @@ void wifi_manager_print_scan_results_with_oui() {
             break;
         }
 
-        // Print access point information without BSSID
+        // Print access point information including BSSID
         printf("[%u] SSID: %s,\n"
+               "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
                "     RSSI: %d,\n"
                "     Company: %s\n",
-               i, ssid_str, scanned_aps[i].rssi, company_str);
+               i, ssid_str, 
+               scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
+               scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
+               scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
+               scanned_aps[i].rssi, company_str);
 
-        // Log information in terminal view without BSSID
+        // Log information in terminal view including BSSID
         TERMINAL_VIEW_ADD_TEXT("[%u] SSID: %s,\n"
+                               "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
                                "     RSSI: %d,\n"
                                "     Company: %s\n",
-                               i, ssid_str, scanned_aps[i].rssi, company_str);
+                               i, ssid_str, 
+                               scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
+                               scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
+                               scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
+                               scanned_aps[i].rssi, company_str);
     }
 }
 
