@@ -7,6 +7,7 @@
 - Basic changeable SD Card pin out through webUI and serial command line (requires existing sd support to be enabled in your board's build)
 - Added default evil portal html directly in the firmware (credit to @breaching and @bigbrodude6119 for the tiny but great html file)
 - Basic congestion command to quickly see channel usage
+- Added scanall command to scan aps and stations together
 
 ### 🤏 Tweaks and Improvements
 

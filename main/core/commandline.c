@@ -1140,6 +1140,13 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("sd_save_config\n");
     TERMINAL_VIEW_ADD_TEXT("    Description: Save current SD pin config to SD card.\n");
     TERMINAL_VIEW_ADD_TEXT("    Usage: sd_save_config\n\n");
+
+    printf("scanall\n");
+    printf("    Description: Perform combined AP and Station scan, display results.\n");
+    printf("    Usage: scanall [seconds]\n\n");
+    TERMINAL_VIEW_ADD_TEXT("scanall\n");
+    TERMINAL_VIEW_ADD_TEXT("    Desc: Combined AP/STA scan & display.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: scanall [seconds]\n\n");
 }
 
 void handle_capture(int argc, char **argv) {
@@ -1578,6 +1585,55 @@ void handle_congestion_cmd(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("%s", footer);
 }
 
+// Forward declaration for the new print function
+void wifi_manager_scanall_chart();
+
+void handle_scanall(int argc, char **argv) {
+    int total_seconds = 10; // Default total duration: 10 seconds
+    if (argc > 1) {
+        char *endptr;
+        long sec = strtol(argv[1], &endptr, 10);
+        if (*endptr == '\0' && sec > 0) {
+            total_seconds = (int)sec;
+        } else {
+            printf("Invalid duration: '%s'. Using default %d seconds.\n", argv[1], total_seconds);
+            TERMINAL_VIEW_ADD_TEXT("Invalid duration: '%s'. Using default %d seconds.\n", argv[1], total_seconds);
+        }
+    }
+
+    int ap_scan_seconds = total_seconds / 2;
+    int sta_scan_seconds = total_seconds - ap_scan_seconds; // Use remaining time
+
+    printf("Starting combined scan (%d sec AP, %d sec STA)...\n", ap_scan_seconds, sta_scan_seconds);
+    TERMINAL_VIEW_ADD_TEXT("Starting combined scan (%ds AP, %ds STA)...\n", ap_scan_seconds, sta_scan_seconds);
+
+    // 1. Perform AP Scan
+    printf("--- Starting AP Scan (%d seconds) ---\n", ap_scan_seconds);
+    TERMINAL_VIEW_ADD_TEXT("--- Starting AP Scan (%ds) ---\n", ap_scan_seconds);
+    wifi_manager_start_scan_with_time(ap_scan_seconds);
+    // Results are now in scanned_aps and ap_count
+
+    // 2. Perform Station Scan
+    printf("--- Starting Station Scan (%d seconds) ---\n", sta_scan_seconds);
+    TERMINAL_VIEW_ADD_TEXT("--- Starting STA Scan (%ds) ---\n", sta_scan_seconds);
+    station_count = 0; // Reset station list before new scan
+    wifi_manager_start_station_scan(); // Starts monitor mode + channel hopping
+    printf("Station scan running for %d seconds...\n", sta_scan_seconds);
+    TERMINAL_VIEW_ADD_TEXT("Station scan running for %ds...\n", sta_scan_seconds);
+    vTaskDelay(pdMS_TO_TICKS(sta_scan_seconds * 1000));
+    wifi_manager_stop_monitor_mode(); // Stops monitor mode + channel hopping
+    // Results are now in station_ap_list and station_count
+
+    printf("--- Scan Complete ---\n");
+    TERMINAL_VIEW_ADD_TEXT("--- Scan Complete ---\n");
+
+    // 3. Print Combined Results
+    wifi_manager_scanall_chart();
+
+    // Ensure AP mode is restored if it was stopped
+    ap_manager_start_services(); // Restore AP for WebUI
+}
+
 void register_commands() {
     register_command("help", handle_help);
     register_command("scanap", cmd_wifi_scan_start);
@@ -1619,6 +1675,7 @@ void register_commands() {
     register_command("sd_pins_mmc", handle_sd_pins_mmc);
     register_command("sd_pins_spi", handle_sd_pins_spi);
     register_command("sd_save_config", handle_sd_save_config);
+    register_command("scanall", handle_scanall);
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }

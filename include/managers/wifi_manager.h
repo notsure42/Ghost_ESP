@@ -249,4 +249,6 @@ static const uint16_t COMMON_PORTS[] = {
 
 void wifi_manager_start_scan_with_time(int seconds);
 
+void wifi_manager_scanall_chart(void);
+
 #endif // WIFI_MANAGER_H

@@ -2661,7 +2661,7 @@ void wifi_manager_start_scan_with_time(int seconds) {
 
     wifi_manager_stop_scan();
     ESP_ERROR_CHECK(esp_wifi_stop());
-    ESP_ERROR_CHECK(ap_manager_start_services());
+    // ESP_ERROR_CHECK(ap_manager_start_services()); // Removed: Rely on caller (handle_combined_scan) to restart AP services
 }
 
 // Station Scan Channel Hopping Callback
@@ -2813,4 +2813,92 @@ void wifi_manager_start_station_scan() {
     start_scansta_channel_hopping();
     printf("Started Station Scan (Channel Hopping Enabled)...\n");
     TERMINAL_VIEW_ADD_TEXT("Started Station Scan (Hopping)...\n");
+}
+
+// Print combined AP/Station scan results in ASCII chart
+void wifi_manager_scanall_chart() {
+    if (ap_count == 0) {
+        printf("No APs found during scan.\n");
+        TERMINAL_VIEW_ADD_TEXT("No APs found during scan.\n");
+        return;
+    }
+
+    printf("\n--- Combined AP and Station Scan Results ---\n\n");
+    TERMINAL_VIEW_ADD_TEXT("\n--- Combined AP/STA Scan Results ---\n\n");
+
+    const char* ap_header_top =    "┌──────────────────────────────────┬───────────────────┬──────┬───────────┐";
+    const char* ap_header_mid =    "│ SSID                             │ BSSID             │ Chan │ Company   │";
+    const char* ap_header_bottom = "├──────────────────────────────────┼───────────────────┼──────┼───────────┤";
+    const char* ap_format =        "│ %-32.32s │ %02X:%02X:%02X:%02X:%02X:%02X │ %-4d │ %-9.9s │";
+    const char* ap_separator =     "├──────────────────────────────────┼───────────────────┼──────┼───────────┤";
+    const char* ap_footer =        "└──────────────────────────────────┴───────────────────┴──────┴───────────┘";
+    const char* sta_format =       "│   -> STA: %02X:%02X:%02X:%02X:%02X:%02X                                             │"; // Formatted station line
+
+
+    // Print Header Once
+    printf("%s\n", ap_header_top);
+    printf("%s\n", ap_header_mid);
+    printf("%s\n", ap_header_bottom);
+    TERMINAL_VIEW_ADD_TEXT("%s\n", ap_header_top);
+    TERMINAL_VIEW_ADD_TEXT("%s\n", ap_header_mid);
+    TERMINAL_VIEW_ADD_TEXT("%s\n", ap_header_bottom);
+
+
+    for (uint16_t i = 0; i < ap_count; i++) {
+        char ssid_temp[33];
+        memcpy(ssid_temp, scanned_aps[i].ssid, 32);
+        ssid_temp[32] = '\0';
+        const char *ssid_str = (strlen(ssid_temp) > 0) ? ssid_temp : "(Hidden)";
+
+        ECompany company = match_bssid_to_company(scanned_aps[i].bssid);
+        const char *company_str = "Unknown";
+         switch (company) {
+             case COMPANY_DLINK: company_str = "DLink"; break;
+             case COMPANY_NETGEAR: company_str = "Netgear"; break;
+             case COMPANY_BELKIN: company_str = "Belkin"; break;
+             case COMPANY_TPLINK: company_str = "TPLink"; break;
+             case COMPANY_LINKSYS: company_str = "Linksys"; break;
+             case COMPANY_ASUS: company_str = "ASUS"; break;
+             case COMPANY_ACTIONTEC: company_str = "Actiontec"; break;
+             default: company_str = "Unknown"; break;
+        }
+
+        // Print AP details line
+        char ap_details_line[200];
+        snprintf(ap_details_line, sizeof(ap_details_line), ap_format, ssid_str,
+                 scanned_aps[i].bssid[0], scanned_aps[i].bssid[1], scanned_aps[i].bssid[2],
+                 scanned_aps[i].bssid[3], scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
+                 scanned_aps[i].primary, company_str);
+        printf("%s\n", ap_details_line);
+        TERMINAL_VIEW_ADD_TEXT("%s\n", ap_details_line);
+
+        bool station_found_for_ap = false;
+        // Find and print associated stations for this AP
+        for (int j = 0; j < station_count; j++) {
+            if (memcmp(station_ap_list[j].ap_bssid, scanned_aps[i].bssid, 6) == 0) {
+                // Print station MAC using the new format
+                char sta_details_line[100];
+                snprintf(sta_details_line, sizeof(sta_details_line), sta_format,
+                         station_ap_list[j].station_mac[0], station_ap_list[j].station_mac[1],
+                         station_ap_list[j].station_mac[2], station_ap_list[j].station_mac[3],
+                         station_ap_list[j].station_mac[4], station_ap_list[j].station_mac[5]);
+                printf("%s\n", sta_details_line);
+                TERMINAL_VIEW_ADD_TEXT("%s\n", sta_details_line);
+                station_found_for_ap = true; // Mark that we printed at least one station
+            }
+        }
+
+        // Print separator line below the AP (and its stations) if it's not the last AP
+        if (i < ap_count - 1) {
+            printf("%s\n", ap_separator);
+            TERMINAL_VIEW_ADD_TEXT("%s\n", ap_separator);
+        }
+    }
+
+    // Print Footer Once
+    printf("%s\n", ap_footer);
+    TERMINAL_VIEW_ADD_TEXT("%s\n", ap_footer);
+
+    printf("\n--- End of Results ---\n\n");
+    TERMINAL_VIEW_ADD_TEXT("--- End of Results ---\n\n");
 }

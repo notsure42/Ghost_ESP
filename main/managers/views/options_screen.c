@@ -39,6 +39,7 @@ static const char *wifi_options[] = {"Scan Access Points",
                                      "Select AP",
                                      "Scan LAN Devices",
                                      "Select LAN",
+                                     "Scan All (AP & Station)",
                                      "Start Deauth Attack",
                                      "Beacon Spam - Random",
                                      "Beacon Spam - Rickroll",
@@ -275,6 +276,12 @@ void option_event_cb(lv_event_t *e) {
         display_manager_switch_view(&terminal_view);
         vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("scanap");
+    }
+
+    if (strcmp(Selected_Option, "Scan All (AP & Station)") == 0) {
+        display_manager_switch_view(&terminal_view);
+        vTaskDelay(pdMS_TO_TICKS(10));
+        simulateCommand("scanall");
     }
 
     if (strcmp(Selected_Option, "Start Deauth Attack") == 0) {
