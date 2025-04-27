@@ -53,14 +53,13 @@ typedef struct {
   unsigned order : 1;
 } wifi_ieee80211_frame_ctrl_t;
 
-typedef struct {
-  wifi_ieee80211_frame_ctrl_t frame_ctrl; // Frame control field
-  uint16_t duration_id;                   // Duration/ID field
-  uint8_t addr1[6];  // Address 1 (Destination MAC or BSSID)
-  uint8_t addr2[6];  // Address 2 (Source MAC)
-  uint8_t addr3[6];  // Address 3 (BSSID or Destination MAC)
-  uint16_t seq_ctrl; // Sequence control field
-  uint8_t addr4[6];  // Optional address 4 (used in certain cases)
+typedef struct __attribute__((packed)) {
+    uint16_t frame_ctrl;  // 2 bytes (raw Frame Control field)
+    uint16_t duration_id;                    // 2 bytes
+    uint8_t  addr1[6];
+    uint8_t  addr2[6];
+    uint8_t  addr3[6];
+    uint16_t seq_ctrl;
 } wifi_ieee80211_hdr_t;
 
 typedef struct {

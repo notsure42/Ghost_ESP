@@ -20,6 +20,7 @@
 - Added support for scanning aps for a specific amount of time eg. ```scanap 10```
 - Connect command now uses saved credentials from flash when no arguments are provided
 - Added channel hopping to station scan
+- Include BSSID in scanap output
 
 ### 🐛 Bug Fixes
 
@@ -27,6 +28,7 @@
 - Fix webUI not using evilportal command line arguments
 - Fix evil‑portal local file serving 
 - Correctly parse station/AP MACs and ignore broadcast/multicast in Station Scan
+- Fix station scanning using wrong frame bit fields and offsetting the mac addresses
 
 ----------------------
 
