@@ -4,11 +4,16 @@
 #include "lvgl.h"
 #include "managers/views/app_gallery_screen.h"
 #include <stdio.h>
+#include <stdlib.h>
 
 static const char *TAG = "MainMenu";
 
 lv_obj_t *menu_container;
 static int selected_item_index = 0;
+static int touch_start_x;
+static int touch_start_y;
+static bool touch_started = false;
+static const int SWIPE_THRESHOLD = 50;
 
 typedef struct {
   const char *name;
@@ -111,27 +116,31 @@ static void update_menu_item(bool slide_left) {
 /**
  * @brief Combined handler for menu item events.
  */
- static void menu_item_event_handler(InputEvent *event) {
-  if (event->type == INPUT_TYPE_TOUCH) {
-      lv_indev_data_t *data = &event->data.touch_data;
-      int half_screen = LV_HOR_RES / 2;
-      int center_area_width = LV_HOR_RES / 3;
-
-      if (data->point.x > (LV_HOR_RES - center_area_width)/2 && 
-          data->point.x < (LV_HOR_RES + center_area_width)/2) {
-          handle_menu_item_selection(selected_item_index);
-      }
-      else if (data->point.x < half_screen) {
-          select_menu_item(selected_item_index - 1, true);
-      }
-      else {
-          select_menu_item(selected_item_index + 1, false);
-      }
-  } 
-  else if (event->type == INPUT_TYPE_JOYSTICK) {
-      int button = event->data.joystick_index;
-      handle_hardware_button_press(button);
-  }
+static void menu_item_event_handler(InputEvent *event) {
+    if (event->type == INPUT_TYPE_TOUCH) {
+        lv_indev_data_t *data = &event->data.touch_data;
+        if (data->state == LV_INDEV_STATE_PR) {
+            touch_started = true;
+            touch_start_x = data->point.x;
+            touch_start_y = data->point.y;
+        } else if (data->state == LV_INDEV_STATE_REL && touch_started) {
+            int dx = data->point.x - touch_start_x;
+            int dy = data->point.y - touch_start_y;
+            touch_started = false;
+            if (abs(dx) > SWIPE_THRESHOLD && abs(dx) > abs(dy)) {
+                if (dx < 0) {
+                    select_menu_item(selected_item_index + 1, true);
+                } else {
+                    select_menu_item(selected_item_index - 1, false);
+                }
+            } else {
+                handle_menu_item_selection(selected_item_index);
+            }
+        }
+    } else if (event->type == INPUT_TYPE_JOYSTICK) {
+        int button = event->data.joystick_index;
+        handle_hardware_button_press(button);
+    }
 }
 
 /**

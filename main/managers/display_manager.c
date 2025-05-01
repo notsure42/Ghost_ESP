@@ -593,6 +593,12 @@ void hardware_input_task(void *pvParameters) {
         printf("Failed to send touch input to queue\n");
       }
     } else if (touch_data.state == LV_INDEV_STATE_REL && touch_active) {
+      InputEvent event;
+      event.type = INPUT_TYPE_TOUCH;
+      event.data.touch_data = touch_data;
+      if (xQueueSend(input_queue, &event, pdMS_TO_TICKS(10)) != pdTRUE) {
+        printf("Failed to send touch input to queue\n");
+      }
       touch_active = false;
     }
 

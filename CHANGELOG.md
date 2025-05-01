@@ -1,5 +1,15 @@
 # Ghost ESP Changelog
 
+## Revival v1.5
+
+### Changed
+
+- Display
+  - Add swipe gesture handling and dispatch touch release events for more accurate main menu navigation.
+
+
+
+
 ## Revival v1.4.9
 
 ### ❤️ New Stuff
