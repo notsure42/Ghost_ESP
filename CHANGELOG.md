@@ -6,11 +6,9 @@
 ### Changed
 
 - Display
-  - Add swipe gesture handling
-  - Add vertical swipe navigation with a dynamic threshold (LV_VER_RES/10) for resolution-independent scrolling of menu items.
+  - Add vertical swipe navigation for scrolling of menu items.
   - Refactored options screen to use lv_list instead of a custom flex container
-
-### Bug Fixes
+  - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
 
 - Display
   - Fixed an issue where an option would be duplicated and freeze the device.
