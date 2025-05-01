@@ -14,6 +14,7 @@ static int touch_start_x;
 static int touch_start_y;
 static bool touch_started = false;
 static const int SWIPE_THRESHOLD = 50;
+static const int TAP_THRESHOLD = 10; // Add a threshold for tap detection
 
 typedef struct {
   const char *name;
@@ -127,13 +128,13 @@ static void menu_item_event_handler(InputEvent *event) {
             int dx = data->point.x - touch_start_x;
             int dy = data->point.y - touch_start_y;
             touch_started = false;
-            if (abs(dx) > SWIPE_THRESHOLD && abs(dx) > abs(dy)) {
+            if (abs(dx) > SWIPE_THRESHOLD && abs(dx) > abs(dy)) { // Swipe detected
                 if (dx < 0) {
                     select_menu_item(selected_item_index + 1, true);
                 } else {
                     select_menu_item(selected_item_index - 1, false);
                 }
-            } else {
+            } else if (abs(dx) < TAP_THRESHOLD && abs(dy) < TAP_THRESHOLD) { // Tap detected
                 handle_menu_item_selection(selected_item_index);
             }
         }
