@@ -157,8 +157,8 @@ void options_menu_create() {
 static void select_option_item(int index) {
     printf("select_option_item called with index: %d, num_items: %d\n", index, num_items);
 
-    if (index < 0) index = num_items - 1;
-    if (index >= num_items) index = 0;
+    if (index < 0) index = 0;
+    if (index >= num_items) index = num_items - 1;
 
     printf("Adjusted index: %d\n", index);
 
@@ -206,7 +206,7 @@ void handle_hardware_button_press_options(InputEvent *event) {
             opt_touch_started = false;
             int threshold = LV_VER_RES / OPT_SWIPE_THRESHOLD_RATIO;
             if (abs(dy) > threshold && abs(dy) > abs(dx)) {
-                lv_obj_scroll_by(menu_container, 0, dy, LV_ANIM_OFF);
+                lv_obj_scroll_by_bounded(menu_container, 0, dy, LV_ANIM_OFF);
                 return;
             }
             for (int i = 0; i < num_items; i++) {
