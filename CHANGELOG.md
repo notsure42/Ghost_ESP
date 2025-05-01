@@ -6,8 +6,9 @@
 ### Changed
 
 - Display
+  - Added swipe handling for the main menu and app gallery views
   - Add vertical swipe navigation for scrolling of menu items.
-  - Refactored options screen to use lv_list instead of a custom flex container
+  - Refactored options screen to use lv_list instead of a custom flex container to improve performance
   - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
 
 ### Bug Fixes
