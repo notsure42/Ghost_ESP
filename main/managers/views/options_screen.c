@@ -243,248 +243,306 @@ void handle_hardware_button_press_options(InputEvent *event) {
 void option_event_cb(lv_event_t *e) {
     if (option_invoked) return;
     option_invoked = true;
+    bool view_switched = false; 
+
     static const char *last_option = NULL;
     static unsigned long last_time_ms = 0;
     unsigned long now_ms = (unsigned long)(esp_timer_get_time() / 1000ULL);
+    
     if (now_ms - createdTimeInMs <= 500) {
+        option_invoked = false; 
         return;
     }
     const char *Selected_Option = (const char *)lv_event_get_user_data(e);
     if (Selected_Option == last_option && now_ms - last_time_ms < 200) {
+        option_invoked = false; 
         return;
     }
     last_option = Selected_Option;
     last_time_ms = now_ms;
 
+
     if (strcmp(Selected_Option, "Scan Access Points") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("scanap");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Scan All (AP & Station)") == 0) {
+    else if (strcmp(Selected_Option, "Scan All (AP & Station)") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("scanall");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Start Deauth Attack") == 0) {
+    else if (strcmp(Selected_Option, "Start Deauth Attack") == 0) {
         display_manager_switch_view(&terminal_view);
         if (!scanned_aps) {
-            TERMINAL_VIEW_ADD_TEXT("No APs scanned. Please run 'Scan Access Points' first.\n");
+            TERMINAL_VIEW_ADD_TEXT("No APs scanned. Please run 'Scan Access Points' first.\\n");
+            
         } else {
             simulateCommand("attack -d");
         }
+        view_switched = true; 
     }
 
-    if (strcmp(Selected_Option, "Scan Stations") == 0) {
+    else if (strcmp(Selected_Option, "Scan Stations") == 0) {
         if (strlen((const char *)selected_ap.ssid) > 0) {
             display_manager_switch_view(&terminal_view);
             simulateCommand("scansta");
+            view_switched = true;
         } else {
             error_popup_create("You Need to Select a Scanned AP First...");
+            
         }
     }
 
-    if (strcmp(Selected_Option, "Beacon Spam - Random") == 0) {
+    else if (strcmp(Selected_Option, "Beacon Spam - Random") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("beaconspam -r");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Beacon Spam - Rickroll") == 0) {
+    else if (strcmp(Selected_Option, "Beacon Spam - Rickroll") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("beaconspam -rr");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Scan LAN Devices") == 0) {
+    else if (strcmp(Selected_Option, "Scan LAN Devices") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("scanlocal");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Beacon Spam - List") == 0) {
+    else if (strcmp(Selected_Option, "Beacon Spam - List") == 0) {
         if (scanned_aps) {
             display_manager_switch_view(&terminal_view);
             simulateCommand("beaconspam -l");
+            view_switched = true;
         } else {
             error_popup_create("You Need to Scan AP's First...");
+            
         }
     }
 
-    if (strcmp(Selected_Option, "Capture Deauth") == 0) {
+    else if (strcmp(Selected_Option, "Capture Deauth") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -deauth");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Capture Probe") == 0) {
+    else if (strcmp(Selected_Option, "Capture Probe") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -probe");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Capture Beacon") == 0) {
+    else if (strcmp(Selected_Option, "Capture Beacon") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -beacon");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Capture Raw") == 0) {
+    else if (strcmp(Selected_Option, "Capture Raw") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -raw");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Capture Eapol") == 0) {
+    else if (strcmp(Selected_Option, "Capture Eapol") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -eapol");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Capture WPS") == 0) {
+    else if (strcmp(Selected_Option, "Capture WPS") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -wps");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "TV Cast (Dial Connect)") == 0) {
+    else if (strcmp(Selected_Option, "TV Cast (Dial Connect)") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("dialconnect");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Power Printer") == 0) {
+    else if (strcmp(Selected_Option, "Power Printer") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("powerprinter");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Start Evil Portal") == 0) {
+    else if (strcmp(Selected_Option, "Start Evil Portal") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("startportal");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Start Wardriving") == 0) {
+    else if (strcmp(Selected_Option, "Start Wardriving") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("startwd");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Stop Wardriving") == 0) {
+    else if (strcmp(Selected_Option, "Stop Wardriving") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("startwd -s");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Start AirTag Scanner") == 0) {
+    else if (strcmp(Selected_Option, "Start AirTag Scanner") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
         simulateCommand("blescan -a");
+        view_switched = true;
 #else
         error_popup_create("Device Does not Support Bluetooth...");
+        
 #endif
     }
 
-    if (strcmp(Selected_Option, "Find Flippers") == 0) {
+    else if (strcmp(Selected_Option, "Find Flippers") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
         simulateCommand("blescan -f");
+        view_switched = true;
 #else
         error_popup_create("Device Does not Support Bluetooth...");
+        
 #endif
     }
 
-    if (strcmp(Selected_Option, "Set RGB Mode - Stealth") == 0) {
+    else if (strcmp(Selected_Option, "Set RGB Mode - Stealth") == 0) {
         simulateCommand("setsetting 1 1");
         vTaskDelay(pdMS_TO_TICKS(10));
         error_popup_create("Set RGB Mode Successfully...");
+        
     }
 
-    if (strcmp(Selected_Option, "Set RGB Mode - Normal") == 0) {
+    else if (strcmp(Selected_Option, "Set RGB Mode - Normal") == 0) {
         simulateCommand("setsetting 1 2");
         vTaskDelay(pdMS_TO_TICKS(10));
         error_popup_create("Set RGB Mode Successfully...");
+        
     }
 
-    if (strcmp(Selected_Option, "Set RGB Mode - Rainbow") == 0) {
+    else if (strcmp(Selected_Option, "Set RGB Mode - Rainbow") == 0) {
         simulateCommand("setsetting 1 3");
         vTaskDelay(pdMS_TO_TICKS(10));
         error_popup_create("Set RGB Mode Successfully...");
+        
     }
 
-    if (strcmp(Selected_Option, "Go Back") == 0) {
+    else if (strcmp(Selected_Option, "Go Back") == 0) {
         selected_item_index = 0;
         num_items = 0;
         menu_container = NULL;
         root = NULL;
-        option_invoked = false;
+        
         display_manager_switch_view(&main_menu_view);
-        return;
-    } else {
-        printf("Option selected: %s\n", Selected_Option);
-    }
-
-    if (strcmp(Selected_Option, "Capture PWN") == 0) {
+        view_switched = true; 
+        return; 
+    } else if (strcmp(Selected_Option, "Capture PWN") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -pwn");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "TP Link Test") == 0) {
+    else if (strcmp(Selected_Option, "TP Link Test") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("tplinktest");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Raw BLE Scanner") == 0) {
+    else if (strcmp(Selected_Option, "Raw BLE Scanner") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
         simulateCommand("blescan -r");
+        view_switched = true;
 #else
         error_popup_create("Device Does not Support Bluetooth...");
+        
 #endif
     }
 
-    if (strcmp(Selected_Option, "BLE Skimmer Detect") == 0) {
+    else if (strcmp(Selected_Option, "BLE Skimmer Detect") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
         simulateCommand("capture -skimmer");
+        view_switched = true;
 #else
         error_popup_create("Device Does not Support Bluetooth...");
+        
 #endif
     }
 
-    if (strcmp(Selected_Option, "GPS Info") == 0) {
+    else if (strcmp(Selected_Option, "GPS Info") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("gpsinfo");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "BLE Wardriving") == 0) {
+    else if (strcmp(Selected_Option, "BLE Wardriving") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
         simulateCommand("blewardriving");
+        view_switched = true;
 #else
         error_popup_create("Device Does not Support Bluetooth...");
+        
 #endif
     }
 
-    if (strcmp(Selected_Option, "PineAP Detection") == 0) {
+    else if (strcmp(Selected_Option, "PineAP Detection") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("pineap");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Scan Open Ports") == 0) {
+    else if (strcmp(Selected_Option, "Scan Open Ports") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("scanports local -C");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Reset AP Credentials") == 0) {
+    else if (strcmp(Selected_Option, "Reset AP Credentials") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("apcred -r");
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Select AP") == 0) {
+    else if (strcmp(Selected_Option, "Select AP") == 0) {
         if (scanned_aps) {
             set_number_pad_mode(NP_MODE_AP);
             display_manager_switch_view(&number_pad_view);
+            view_switched = true;
         } else {
             error_popup_create("You Need to Scan APs First...");
+            
         }
     }
 
-    if (strcmp(Selected_Option, "Select LAN") == 0) {
+    else if (strcmp(Selected_Option, "Select LAN") == 0) {
         set_number_pad_mode(NP_MODE_LAN);
         display_manager_switch_view(&number_pad_view);
+        view_switched = true;
     }
 
-    if (strcmp(Selected_Option, "Channel Congestion") == 0) {
+    else if (strcmp(Selected_Option, "Channel Congestion") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("congestion");
+        view_switched = true;
+    }
+
+    else {
+        printf("Unhandled Option selected: %s\\n", Selected_Option);
+        
+    }
+
+    
+    if (!view_switched) {
+        option_invoked = false;
     }
 }
 
