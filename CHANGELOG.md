@@ -6,7 +6,7 @@
 ### Changed
 
 - Display
-  - Add swipe gesture handling and dispatch touch release events for more accurate main menu navigation.
+  - Add swipe gesture handling
   - Add vertical swipe navigation with a dynamic threshold (LV_VER_RES/10) for resolution-independent scrolling of menu items.
   - Refactored options screen to use lv_list instead of a custom flex container
 

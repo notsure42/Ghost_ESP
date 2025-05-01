@@ -143,6 +143,7 @@ void options_menu_create() {
         }
 
         lv_obj_set_user_data(btn, (void *)options[i]);
+        lv_obj_add_event_cb(btn, option_event_cb, LV_EVENT_CLICKED, (void *)options[i]);
 
         num_items++;
     }
@@ -198,36 +199,29 @@ void handle_hardware_button_press_options(InputEvent *event) {
             opt_touch_start_x = data->point.x;
             opt_touch_start_y = data->point.y;
             return;
-        } else if (data->state == LV_INDEV_STATE_REL && opt_touch_started) {
+        }
+        if (data->state == LV_INDEV_STATE_REL && opt_touch_started) {
             int dx = data->point.x - opt_touch_start_x;
             int dy = data->point.y - opt_touch_start_y;
             opt_touch_started = false;
             int threshold = LV_VER_RES / OPT_SWIPE_THRESHOLD_RATIO;
             if (abs(dy) > threshold && abs(dy) > abs(dx)) {
-                if (dy > 0) {
-                    select_option_item(selected_item_index - 1);
-                } else {
-                    select_option_item(selected_item_index + 1);
-                }
+                lv_obj_scroll_by(menu_container, 0, dy, LV_ANIM_OFF);
                 return;
-            } else if (abs(dx) < 5 && abs(dy) < 5) {
-                lv_obj_t *selected_obj = lv_obj_get_child(menu_container, selected_item_index);
-                if (selected_obj) {
-                    handle_option_directly((const char *)lv_obj_get_user_data(selected_obj));
+            }
+            for (int i = 0; i < num_items; i++) {
+                lv_obj_t *btn = lv_obj_get_child(menu_container, i);
+                lv_area_t btn_area;
+                lv_obj_get_coords(btn, &btn_area);
+                if (data->point.x >= btn_area.x1 && data->point.x <= btn_area.x2 &&
+                    data->point.y >= btn_area.y1 && data->point.y <= btn_area.y2) {
+                    select_option_item(i);
+                    handle_option_directly((const char *)lv_obj_get_user_data(btn));
+                    return;
                 }
             }
-        } else {
-            return;
         }
-        printf("Touch at x=%d, y=%d\n", data->point.x, data->point.y);
-        if (data->point.y > LV_VER_RES - 50) {
-            if (data->point.x > LV_HOR_RES - 100 && data->point.x < LV_HOR_RES - 50) {
-                select_option_item(selected_item_index - 1);
-            } else if (data->point.x > LV_HOR_RES - 50) {
-                select_option_item(selected_item_index + 1);
-            }
-            return;
-        }
+        return;
     } else if (event->type == INPUT_TYPE_JOYSTICK) {
         int button = event->data.joystick_index;
         if (button == 2) {
