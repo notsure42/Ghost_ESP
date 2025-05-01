@@ -17,6 +17,10 @@ lv_obj_t *root = NULL;
 lv_obj_t *menu_container = NULL;
 int num_items = 0;
 unsigned long createdTimeInMs = 0;
+static int opt_touch_start_x;
+static int opt_touch_start_y;
+static bool opt_touch_started = false;
+static const int OPT_SWIPE_THRESHOLD_RATIO = 10;
 
 static void select_option_item(int index); // Forward Declaration
 
@@ -222,19 +226,36 @@ static void select_option_item(int index) {
 void handle_hardware_button_press_options(InputEvent *event) {
     if (event->type == INPUT_TYPE_TOUCH) {
         lv_indev_data_t *data = &event->data.touch_data;
+        if (data->state == LV_INDEV_STATE_PR) {
+            opt_touch_started = true;
+            opt_touch_start_x = data->point.x;
+            opt_touch_start_y = data->point.y;
+            return;
+        } else if (data->state == LV_INDEV_STATE_REL && opt_touch_started) {
+            int dx = data->point.x - opt_touch_start_x;
+            int dy = data->point.y - opt_touch_start_y;
+            opt_touch_started = false;
+            int threshold = LV_VER_RES / OPT_SWIPE_THRESHOLD_RATIO;
+            if (abs(dy) > threshold && abs(dy) > abs(dx)) {
+                if (dy > 0) {
+                    select_option_item(selected_item_index - 1);
+                } else {
+                    select_option_item(selected_item_index + 1);
+                }
+                return;
+            }
+        } else {
+            return;
+        }
         printf("Touch at x=%d, y=%d\n", data->point.x, data->point.y);
-
-        // Check if touch is on up/down buttons (bottom 50px)
         if (data->point.y > LV_VER_RES - 50) {
             if (data->point.x > LV_HOR_RES - 100 && data->point.x < LV_HOR_RES - 50) {
-                select_option_item(selected_item_index - 1); // Up
+                select_option_item(selected_item_index - 1);
             } else if (data->point.x > LV_HOR_RES - 50) {
-                select_option_item(selected_item_index + 1); // Down
+                select_option_item(selected_item_index + 1);
             }
             return;
         }
-
-        // Check touch on buttons
         for (int i = 0; i < num_items; i++) {
             lv_obj_t *btn = lv_obj_get_child(menu_container, i);
             lv_area_t btn_area;
