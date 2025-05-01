@@ -10,6 +10,8 @@
   - Refactored options screen to use lv_list instead of a custom flex container
   - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
 
+### Bug Fixes
+
 - Display
   - Fixed an issue where an option would be duplicated and freeze the device.
 
