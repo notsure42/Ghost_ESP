@@ -21,6 +21,8 @@ static int opt_touch_start_x;
 static int opt_touch_start_y;
 static bool opt_touch_started = false;
 static const int OPT_SWIPE_THRESHOLD_RATIO = 10;
+static bool option_fired = false;
+static bool option_invoked = false;
 
 static void select_option_item(int index); // Forward Declaration
 
@@ -84,12 +86,14 @@ select_option_item(selected_item_index + direction);
 
 
 void options_menu_create() {
+    option_invoked = false;
     int screen_width = LV_HOR_RES;
     int screen_height = LV_VER_RES;
 
     bool is_small_screen = (screen_width <= 240 || screen_height <= 240);
 
     display_manager_fill_screen(lv_color_hex(0x121212));
+    lv_obj_clear_flag(lv_scr_act(), LV_OBJ_FLAG_SCROLLABLE);
 
     root = lv_obj_create(lv_scr_act());
     options_menu_view.root = root;
@@ -98,16 +102,15 @@ void options_menu_create() {
     lv_obj_set_style_pad_all(root, 0, 0);
     lv_obj_align(root, LV_ALIGN_TOP_LEFT, 0, 0);
     lv_obj_set_scrollbar_mode(root, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_clear_flag(root, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_border_width(root, 0, LV_PART_MAIN);
 
-    menu_container = lv_obj_create(root);
+    menu_container = lv_list_create(root);
     lv_obj_set_size(menu_container, screen_width, screen_height - 20);
-    lv_obj_set_layout(menu_container, LV_LAYOUT_FLEX);
-    lv_obj_set_flex_flow(menu_container, LV_FLEX_FLOW_COLUMN);
-    lv_obj_set_style_bg_opa(menu_container, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_pad_all(menu_container, is_small_screen ? 5 : 10, 0);
-    lv_obj_set_style_pad_row(menu_container, is_small_screen ? 2 : 5, 0);
-    lv_obj_set_scrollbar_mode(menu_container, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_align(menu_container, LV_ALIGN_TOP_MID, 0, 20);
+    lv_obj_set_style_bg_color(menu_container, lv_color_hex(0x121212), 0);
+    lv_obj_set_style_pad_all(menu_container, 0, 0);
+    lv_obj_set_style_border_width(menu_container, 0, 0);
 
     const char **options = NULL;
     switch (SelectedMenuType) {
@@ -124,59 +127,24 @@ void options_menu_create() {
     }
 
     num_items = 0;
-    int button_height = is_small_screen ? 40 : 60; // Scale down button height for small screens
+    int button_height = is_small_screen ? 40 : 60;
     for (int i = 0; options[i] != NULL; i++) {
-        lv_obj_t *btn = lv_btn_create(menu_container);
-        lv_obj_set_size(btn, screen_width - (is_small_screen ? 10 : 20), button_height);
-        lv_obj_set_style_bg_color(btn, lv_color_hex(0x1E1E1E), LV_PART_MAIN);
-        lv_obj_set_style_shadow_width(btn, is_small_screen ? 2 : 3, LV_PART_MAIN); // Smaller shadow
-        lv_obj_set_style_shadow_color(btn, lv_color_hex(0x000000), LV_PART_MAIN);
+        lv_obj_t *btn = lv_list_add_btn(menu_container, NULL, options[i]);
+        lv_obj_set_height(btn, button_height);
+        lv_obj_set_style_bg_color(btn, lv_color_hex(0x1E1E1E), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
         lv_obj_set_style_border_width(btn, 0, LV_PART_MAIN);
-        lv_obj_set_style_radius(btn, is_small_screen ? 5 : 10, LV_PART_MAIN); // Smaller radius
-        lv_obj_set_scrollbar_mode(btn, LV_SCROLLBAR_MODE_OFF);
+        lv_obj_set_style_radius(btn, 0, LV_PART_MAIN);
 
-        lv_obj_set_layout(btn, LV_LAYOUT_FLEX);
-        lv_obj_set_flex_flow(btn, LV_FLEX_FLOW_ROW);
-        lv_obj_set_flex_align(btn, LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-        lv_obj_set_style_pad_all(btn, is_small_screen ? 5 : 10, 0); // Reduce padding inside button
-
-        lv_obj_t *label = lv_label_create(btn);
-        lv_label_set_text(label, options[i]);
-        lv_obj_set_style_text_font(label, is_small_screen ? &lv_font_montserrat_14 : &lv_font_montserrat_16, 0); // Smaller font
-        lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
-
-        if (options[i + 1] != NULL) {
-            lv_obj_set_style_border_width(btn, 1, LV_PART_MAIN);
-            lv_obj_set_style_border_side(btn, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
-            lv_obj_set_style_border_color(btn, lv_color_hex(0x333333), LV_PART_MAIN);
+        lv_obj_t *label = lv_obj_get_child(btn, 0);
+        if (label) {
+           lv_obj_set_style_text_font(label, is_small_screen ? &lv_font_montserrat_14 : &lv_font_montserrat_16, 0);
+           lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
         }
 
-        lv_obj_add_event_cb(btn, option_event_cb, LV_EVENT_CLICKED, (void *)options[i]);
         lv_obj_set_user_data(btn, (void *)options[i]);
 
         num_items++;
-    }
-
-    if (num_items * (button_height + (is_small_screen ? 2 : 5)) > screen_height - 20) {
-        lv_obj_t *up_btn = lv_btn_create(root);
-        lv_obj_set_size(up_btn, is_small_screen ? 30 : 40, is_small_screen ? 30 : 40); // Smaller buttons
-        lv_obj_align(up_btn, LV_ALIGN_BOTTOM_RIGHT, is_small_screen ? -40 : -50, -10);
-        lv_obj_set_style_bg_color(up_btn, lv_color_hex(0x333333), LV_PART_MAIN);
-        lv_obj_set_style_radius(up_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-        lv_obj_t *up_label = lv_label_create(up_btn);
-        lv_label_set_text(up_label, LV_SYMBOL_UP);
-        lv_obj_center(up_label);
-        lv_obj_add_event_cb(up_btn, up_down_event_cb, LV_EVENT_CLICKED, (void *)-1);
-
-        lv_obj_t *down_btn = lv_btn_create(root);
-        lv_obj_set_size(down_btn, is_small_screen ? 30 : 40, is_small_screen ? 30 : 40); // Smaller buttons
-        lv_obj_align(down_btn, LV_ALIGN_BOTTOM_RIGHT, -10, -10);
-        lv_obj_set_style_bg_color(down_btn, lv_color_hex(0x333333), LV_PART_MAIN);
-        lv_obj_set_style_radius(down_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-        lv_obj_t *down_label = lv_label_create(down_btn);
-        lv_label_set_text(down_label, LV_SYMBOL_DOWN);
-        lv_obj_center(down_label);
-        lv_obj_add_event_cb(down_btn, up_down_event_cb, LV_EVENT_CLICKED, (void *)1);
     }
 
     select_option_item(0);
@@ -209,14 +177,13 @@ static void select_option_item(int index) {
 
     lv_obj_t *current_item = lv_obj_get_child(menu_container, selected_item_index);
     if (current_item) {
-        lv_color_t orange_start = lv_color_hex(0xFF5722); // Deep orange
-        lv_color_t orange_end = lv_color_hex(0xD81B60);   // Darker orange-pink
+        lv_color_t orange_start = lv_color_hex(0xFF5722);
+        lv_color_t orange_end = lv_color_hex(0xD81B60);
         lv_obj_set_style_bg_color(current_item, orange_start, LV_PART_MAIN);
         lv_obj_set_style_bg_grad_color(current_item, orange_end, LV_PART_MAIN);
         lv_obj_set_style_bg_grad_dir(current_item, LV_GRAD_DIR_VER, LV_PART_MAIN);
         lv_obj_set_style_bg_opa(current_item, LV_OPA_COVER, LV_PART_MAIN);
 
-        // Scroll to view if needed
         lv_obj_scroll_to_view(current_item, LV_ANIM_OFF);
     } else {
         printf("Error: Current item not found for index %d\n", selected_item_index);
@@ -243,6 +210,11 @@ void handle_hardware_button_press_options(InputEvent *event) {
                     select_option_item(selected_item_index + 1);
                 }
                 return;
+            } else if (abs(dx) < 5 && abs(dy) < 5) {
+                lv_obj_t *selected_obj = lv_obj_get_child(menu_container, selected_item_index);
+                if (selected_obj) {
+                    handle_option_directly((const char *)lv_obj_get_user_data(selected_obj));
+                }
             }
         } else {
             return;
@@ -256,23 +228,12 @@ void handle_hardware_button_press_options(InputEvent *event) {
             }
             return;
         }
-        for (int i = 0; i < num_items; i++) {
-            lv_obj_t *btn = lv_obj_get_child(menu_container, i);
-            lv_area_t btn_area;
-            lv_obj_get_coords(btn, &btn_area);
-            if (data->point.x >= btn_area.x1 && data->point.x <= btn_area.x2 &&
-                data->point.y >= btn_area.y1 && data->point.y <= btn_area.y2) {
-                select_option_item(i);
-                handle_option_directly((const char *)lv_obj_get_user_data(btn));
-                break;
-            }
-        }
     } else if (event->type == INPUT_TYPE_JOYSTICK) {
         int button = event->data.joystick_index;
         if (button == 2) {
-            select_option_item(selected_item_index - 1); // Up
+            select_option_item(selected_item_index - 1);
         } else if (button == 4) {
-            select_option_item(selected_item_index + 1); // Down
+            select_option_item(selected_item_index + 1);
         } else if (button == 1) {
             lv_obj_t *selected_obj = lv_obj_get_child(menu_container, selected_item_index);
             if (selected_obj) {
@@ -286,28 +247,33 @@ void handle_hardware_button_press_options(InputEvent *event) {
 }
 
 void option_event_cb(lv_event_t *e) {
-    // when moving to the options screen ignore any click events for 1s
-    if ((esp_timer_get_time() / 1000ULL) - createdTimeInMs <= 500) {
+    if (option_invoked) return;
+    option_invoked = true;
+    static const char *last_option = NULL;
+    static unsigned long last_time_ms = 0;
+    unsigned long now_ms = (unsigned long)(esp_timer_get_time() / 1000ULL);
+    if (now_ms - createdTimeInMs <= 500) {
         return;
     }
-
     const char *Selected_Option = (const char *)lv_event_get_user_data(e);
+    if (Selected_Option == last_option && now_ms - last_time_ms < 200) {
+        return;
+    }
+    last_option = Selected_Option;
+    last_time_ms = now_ms;
 
     if (strcmp(Selected_Option, "Scan Access Points") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("scanap");
     }
 
     if (strcmp(Selected_Option, "Scan All (AP & Station)") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("scanall");
     }
 
     if (strcmp(Selected_Option, "Start Deauth Attack") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         if (!scanned_aps) {
             TERMINAL_VIEW_ADD_TEXT("No APs scanned. Please run 'Scan Access Points' first.\n");
         } else {
@@ -318,7 +284,6 @@ void option_event_cb(lv_event_t *e) {
     if (strcmp(Selected_Option, "Scan Stations") == 0) {
         if (strlen((const char *)selected_ap.ssid) > 0) {
             display_manager_switch_view(&terminal_view);
-            vTaskDelay(pdMS_TO_TICKS(10));
             simulateCommand("scansta");
         } else {
             error_popup_create("You Need to Select a Scanned AP First...");
@@ -327,26 +292,22 @@ void option_event_cb(lv_event_t *e) {
 
     if (strcmp(Selected_Option, "Beacon Spam - Random") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("beaconspam -r");
     }
 
     if (strcmp(Selected_Option, "Beacon Spam - Rickroll") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("beaconspam -rr");
     }
 
     if (strcmp(Selected_Option, "Scan LAN Devices") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("scanlocal");
     }
 
     if (strcmp(Selected_Option, "Beacon Spam - List") == 0) {
         if (scanned_aps) {
             display_manager_switch_view(&terminal_view);
-            vTaskDelay(pdMS_TO_TICKS(10));
             simulateCommand("beaconspam -l");
         } else {
             error_popup_create("You Need to Scan AP's First...");
@@ -355,74 +316,62 @@ void option_event_cb(lv_event_t *e) {
 
     if (strcmp(Selected_Option, "Capture Deauth") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -deauth");
     }
 
     if (strcmp(Selected_Option, "Capture Probe") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -probe");
     }
 
     if (strcmp(Selected_Option, "Capture Beacon") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -beacon");
     }
 
     if (strcmp(Selected_Option, "Capture Raw") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -raw");
     }
 
     if (strcmp(Selected_Option, "Capture Eapol") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -eapol");
     }
 
     if (strcmp(Selected_Option, "Capture WPS") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -wps");
     }
 
     if (strcmp(Selected_Option, "TV Cast (Dial Connect)") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("dialconnect");
     }
 
     if (strcmp(Selected_Option, "Power Printer") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("powerprinter");
     }
 
     if (strcmp(Selected_Option, "Start Evil Portal") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("startportal");
     }
 
     if (strcmp(Selected_Option, "Start Wardriving") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("startwd");
     }
 
     if (strcmp(Selected_Option, "Stop Wardriving") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("startwd -s");
     }
 
     if (strcmp(Selected_Option, "Start AirTag Scanner") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("blescan -a");
 #else
         error_popup_create("Device Does not Support Bluetooth...");
@@ -432,7 +381,6 @@ void option_event_cb(lv_event_t *e) {
     if (strcmp(Selected_Option, "Find Flippers") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("blescan -f");
 #else
         error_popup_create("Device Does not Support Bluetooth...");
@@ -458,34 +406,30 @@ void option_event_cb(lv_event_t *e) {
     }
 
     if (strcmp(Selected_Option, "Go Back") == 0) {
-        // Clear any state before switching views
         selected_item_index = 0;
         num_items = 0;
         menu_container = NULL;
         root = NULL;
-
+        option_invoked = false;
         display_manager_switch_view(&main_menu_view);
-        return; // Important: return immediately after initiating view switch
+        return;
     } else {
         printf("Option selected: %s\n", Selected_Option);
     }
 
     if (strcmp(Selected_Option, "Capture PWN") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -pwn");
     }
 
     if (strcmp(Selected_Option, "TP Link Test") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("tplinktest");
     }
 
     if (strcmp(Selected_Option, "Raw BLE Scanner") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("blescan -r");
 #else
         error_popup_create("Device Does not Support Bluetooth...");
@@ -495,7 +439,6 @@ void option_event_cb(lv_event_t *e) {
     if (strcmp(Selected_Option, "BLE Skimmer Detect") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("capture -skimmer");
 #else
         error_popup_create("Device Does not Support Bluetooth...");
@@ -504,14 +447,12 @@ void option_event_cb(lv_event_t *e) {
 
     if (strcmp(Selected_Option, "GPS Info") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("gpsinfo");
     }
 
     if (strcmp(Selected_Option, "BLE Wardriving") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("blewardriving");
 #else
         error_popup_create("Device Does not Support Bluetooth...");
@@ -520,19 +461,16 @@ void option_event_cb(lv_event_t *e) {
 
     if (strcmp(Selected_Option, "PineAP Detection") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("pineap");
     }
 
     if (strcmp(Selected_Option, "Scan Open Ports") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("scanports local -C");
     }
 
     if (strcmp(Selected_Option, "Reset AP Credentials") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("apcred -r");
     }
 
@@ -540,7 +478,6 @@ void option_event_cb(lv_event_t *e) {
         if (scanned_aps) {
             set_number_pad_mode(NP_MODE_AP);
             display_manager_switch_view(&number_pad_view);
-            vTaskDelay(pdMS_TO_TICKS(10));
         } else {
             error_popup_create("You Need to Scan APs First...");
         }
@@ -549,12 +486,10 @@ void option_event_cb(lv_event_t *e) {
     if (strcmp(Selected_Option, "Select LAN") == 0) {
         set_number_pad_mode(NP_MODE_LAN);
         display_manager_switch_view(&number_pad_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
     }
 
     if (strcmp(Selected_Option, "Channel Congestion") == 0) {
         display_manager_switch_view(&terminal_view);
-        vTaskDelay(pdMS_TO_TICKS(10));
         simulateCommand("congestion");
     }
 }
@@ -567,18 +502,15 @@ void handle_option_directly(const char *Selected_Option) {
 
 void options_menu_destroy(void) {
     if (options_menu_view.root) {
-        // First clean up any child objects
         if (menu_container) {
             lv_obj_clean(menu_container);
             menu_container = NULL;
         }
 
-        // Then clean up the root object
         lv_obj_clean(options_menu_view.root);
         lv_obj_del(options_menu_view.root);
         options_menu_view.root = NULL;
 
-        // Reset state
         selected_item_index = 0;
         num_items = 0;
     }
