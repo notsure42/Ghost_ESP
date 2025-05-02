@@ -6,12 +6,12 @@
 
 - Display
   - Add back button to options screen bottom center to return to main menu
+  - Added swipe handling for the main menu and app gallery views
+  - Add vertical swipe navigation for scrolling of menu items.
 
 ### Changed
 
 - Display
-  - Added swipe handling for the main menu and app gallery views
-  - Add vertical swipe navigation for scrolling of menu items.
   - Refactored options screen to use lv_list instead of a custom flex container to improve performance
   - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
   - Offset terminal page vertically by status bar height and adjust its height accordingly.
@@ -22,7 +22,7 @@
 
 - Display
   - Fixed an issue where an option would be duplicated and freeze the device.
-
+  - Skip first touch event while backlight is dimmed so tap only wakes the screen without registering input
 - Power
   - Fixed an issue where the device was reporting that it was not charging when it was.
 

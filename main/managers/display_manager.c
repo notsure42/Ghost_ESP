@@ -573,24 +573,28 @@ void hardware_input_task(void *pvParameters) {
 #endif
 
     if (touch_data.state == LV_INDEV_STATE_PR && !touch_active) {
-      touch_active = true;
-
+      bool skip_event = false;
 #ifdef CONFIG_HAS_BATTERY
-      last_touch_time = xTaskGetTickCount();
       if (is_backlight_dimmed) {
         set_backlight_brightness(1);
         is_backlight_dimmed = false;
+        last_touch_time = xTaskGetTickCount();
+        skip_event = true;
+        vTaskDelay(pdMS_TO_TICKS(100));
       }
 #endif
-
-      InputEvent event;
-      event.type = INPUT_TYPE_TOUCH;
-      event.data.touch_data.point.x = touch_data.point.x;
-      event.data.touch_data.point.y = touch_data.point.y;
-      event.data.touch_data.state = touch_data.state;
-
-      if (xQueueSend(input_queue, &event, pdMS_TO_TICKS(10)) != pdTRUE) {
-        printf("Failed to send touch input to queue\n");
+      if (!skip_event) {
+        if (xTaskGetTickCount() - last_touch_time > pdMS_TO_TICKS(500)) {
+          touch_active = true;
+          InputEvent event;
+          event.type = INPUT_TYPE_TOUCH;
+          event.data.touch_data.point.x = touch_data.point.x;
+          event.data.touch_data.point.y = touch_data.point.y;
+          event.data.touch_data.state = touch_data.state;
+          if (xQueueSend(input_queue, &event, pdMS_TO_TICKS(10)) != pdTRUE) {
+            printf("Failed to send touch input to queue\n");
+          }
+        }
       }
     } else if (touch_data.state == LV_INDEV_STATE_REL && touch_active) {
       InputEvent event;
