@@ -26,6 +26,7 @@ static bool is_stopping = false;
 #define BUTTON_PADDING 5
 
 static lv_obj_t *back_btn = NULL;
+static lv_timer_t *terminal_update_timer = NULL;
 
 static void scroll_terminal_up(void);
 static void scroll_terminal_down(void);
@@ -60,12 +61,43 @@ static void clear_message_queue(void) {
 }
 
 static void process_queued_messages(void) {
+  if (!terminal_active || !terminal_page || is_stopping || message_queue.count == 0) {
+    return;
+  }
+
+  if (xSemaphoreTake(terminal_mutex, pdMS_TO_TICKS(50)) != pdTRUE) {
+    ESP_LOGW(TAG, "Failed to acquire terminal mutex in process_queued_messages");
+    return; // Try again later
+  }
+
+  lv_obj_t *last_item = NULL;
   while (message_queue.count > 0) {
     const char *msg = message_queue.messages[message_queue.head];
-    terminal_view_add_text(msg);
+    
+    // Add text to LVGL list
+    lv_obj_t *item = lv_list_add_text(terminal_page, msg);
+    lv_label_set_long_mode(item, LV_LABEL_LONG_WRAP);
+    lv_obj_set_style_bg_opa(item, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_text_color(item, lv_color_hex(0x00FF00), 0);
+    lv_obj_set_style_text_font(item, &lv_font_montserrat_10, 0);
+    last_item = item; // Keep track of the last added item
+
+    // Dequeue
     message_queue.head = (message_queue.head + 1) % MAX_QUEUE_SIZE;
     message_queue.count--;
   }
+
+  // Scroll to the last item added in this batch
+  if (last_item) {
+    lv_obj_scroll_to_view(last_item, LV_ANIM_OFF);
+  }
+
+  xSemaphoreGive(terminal_mutex);
+}
+
+// Wrapper callback for the LVGL timer
+static void process_queued_messages_callback(lv_timer_t * timer) {
+    process_queued_messages();
 }
 
 int custom_log_vprintf(const char *fmt, va_list args);
@@ -167,13 +199,26 @@ void terminal_view_create(void) {
   }
 
   display_manager_add_status_bar("Terminal");
-  process_queued_messages();
+
+  // Create and start the update timer
+  if (!terminal_update_timer) { 
+      terminal_update_timer = lv_timer_create(process_queued_messages_callback, 50, NULL); // 50ms interval
+      if (!terminal_update_timer) {
+          ESP_LOGE(TAG, "Failed to create terminal update timer");
+      }
+  }
 }
 
 void terminal_view_destroy(void) {
   terminal_active = false;
   is_stopping = true;
   clear_message_queue();
+
+  // Stop and delete the timer
+  if (terminal_update_timer) {
+    lv_timer_del(terminal_update_timer);
+    terminal_update_timer = NULL;
+  }
 
   vTaskDelay(pdMS_TO_TICKS(50));
 
@@ -199,23 +244,37 @@ void terminal_view_add_text(const char *text) {
   if (!text || is_stopping) return;
   if (text[0] == '\0') return;
 
-  if (!terminal_active || !terminal_page) {
-    queue_message(text);
+  // If terminal is not active or ready, just queue the message
+  if (!terminal_active || !terminal_page || !terminal_mutex) {
+    // Need mutex to safely queue even if terminal inactive
+    if (!terminal_mutex) { // Create if absolutely needed, should ideally exist
+        ESP_LOGW(TAG, "Terminal mutex not yet created, creating temporarily");
+        terminal_mutex = xSemaphoreCreateMutex();
+        if (!terminal_mutex) {
+            ESP_LOGE(TAG, "Failed to create temporary mutex for queueing");
+            return; // Cannot queue safely
+        }
+    }
+    if (xSemaphoreTake(terminal_mutex, pdMS_TO_TICKS(50)) == pdTRUE) {
+        queue_message(text);
+        xSemaphoreGive(terminal_mutex);
+    } else {
+        ESP_LOGW(TAG, "Failed to get mutex for early queueing");
+        // Maybe drop message or handle error?
+    }
     return;
   }
 
+  // Terminal is active, acquire mutex and queue message
   if (xSemaphoreTake(terminal_mutex, pdMS_TO_TICKS(500)) != pdTRUE) {
-    ESP_LOGW(TAG, "Failed to acquire terminal mutex");
-    queue_message(text);
+    ESP_LOGW(TAG, "Failed to acquire terminal mutex in add_text");
+    // Consider alternative like trying to queue without mutex if desperate?
+    // For now, log and drop/ignore.
     return;
   }
 
-  lv_obj_t *item = lv_list_add_text(terminal_page, text);
-  lv_label_set_long_mode(item, LV_LABEL_LONG_WRAP);
-  lv_obj_set_style_bg_opa(item, LV_OPA_TRANSP, 0);
-  lv_obj_set_style_text_color(item, lv_color_hex(0x00FF00), 0);
-  lv_obj_set_style_text_font(item, &lv_font_montserrat_10, 0);
-  lv_obj_scroll_to_view(item, LV_ANIM_OFF);
+  queue_message(text);
+  
   xSemaphoreGive(terminal_mutex);
 }
 

@@ -11,6 +11,7 @@
   - Refactored options screen to use lv_list instead of a custom flex container to improve performance
   - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
   - Offset terminal page vertically by status bar height and adjust its height accordingly.
+  - Optimize terminal screen by batching text additions
   
 ### Bug Fixes
 
