@@ -24,7 +24,27 @@ static const int OPT_SWIPE_THRESHOLD_RATIO = 10;
 static bool option_fired = false;
 static bool option_invoked = false;
 
+// Add button declarations and constants
+static lv_obj_t *scroll_up_btn = NULL;
+static lv_obj_t *scroll_down_btn = NULL;
+#define SCROLL_BTN_SIZE 40
+#define SCROLL_BTN_PADDING 5
+static bool touch_on_scroll_btn = false; // Flag active between press and release on scroll buttons
+
 static void select_option_item(int index); // Forward Declaration
+
+// Add scroll functions
+static void scroll_options_up(lv_event_t *e) {
+    if (!menu_container) return;
+    lv_coord_t scroll_amt = lv_obj_get_height(menu_container) / 2;
+    lv_obj_scroll_by_bounded(menu_container, 0, -scroll_amt, LV_ANIM_OFF);
+}
+
+static void scroll_options_down(lv_event_t *e) {
+    if (!menu_container) return;
+    lv_coord_t scroll_amt = lv_obj_get_height(menu_container) / 2;
+    lv_obj_scroll_by_bounded(menu_container, 0, scroll_amt, LV_ANIM_OFF);
+}
 
 const char *options_menu_type_to_string(EOptionsMenuType menuType) {
     switch (menuType) {
@@ -105,9 +125,15 @@ void options_menu_create() {
     lv_obj_clear_flag(root, LV_OBJ_FLAG_SCROLLABLE);
     lv_obj_set_style_border_width(root, 0, LV_PART_MAIN);
 
+    // Calculate heights considering status bar (20px) and scroll buttons
+    const int STATUS_BAR_HEIGHT = 20;
+    const int BUTTON_AREA_HEIGHT = SCROLL_BTN_SIZE + SCROLL_BTN_PADDING * 2;
+    int container_height = screen_height - STATUS_BAR_HEIGHT - BUTTON_AREA_HEIGHT;
+
     menu_container = lv_list_create(root);
-    lv_obj_set_size(menu_container, screen_width, screen_height - 20);
-    lv_obj_align(menu_container, LV_ALIGN_TOP_MID, 0, 20);
+    // Adjust size and position
+    lv_obj_set_size(menu_container, screen_width, container_height); 
+    lv_obj_align(menu_container, LV_ALIGN_TOP_MID, 0, STATUS_BAR_HEIGHT); 
     lv_obj_set_style_bg_color(menu_container, lv_color_hex(0x121212), 0);
     lv_obj_set_style_pad_all(menu_container, 0, 0);
     lv_obj_set_style_border_width(menu_container, 0, 0);
@@ -150,6 +176,27 @@ void options_menu_create() {
 
     select_option_item(0);
     display_manager_add_status_bar(options_menu_type_to_string(SelectedMenuType));
+
+    // Create scroll buttons
+    scroll_down_btn = lv_btn_create(root);
+    lv_obj_set_size(scroll_down_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
+    lv_obj_align(scroll_down_btn, LV_ALIGN_BOTTOM_RIGHT, -SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING);
+    lv_obj_set_style_bg_color(scroll_down_btn, lv_color_hex(0x333333), LV_PART_MAIN);
+    lv_obj_set_style_radius(scroll_down_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_add_event_cb(scroll_down_btn, scroll_options_down, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *down_label = lv_label_create(scroll_down_btn);
+    lv_label_set_text(down_label, LV_SYMBOL_DOWN);
+    lv_obj_center(down_label);
+
+    scroll_up_btn = lv_btn_create(root);
+    lv_obj_set_size(scroll_up_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
+    lv_obj_align(scroll_up_btn, LV_ALIGN_BOTTOM_LEFT, SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING);
+    lv_obj_set_style_bg_color(scroll_up_btn, lv_color_hex(0x333333), LV_PART_MAIN);
+    lv_obj_set_style_radius(scroll_up_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_add_event_cb(scroll_up_btn, scroll_options_up, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *up_label = lv_label_create(scroll_up_btn);
+    lv_label_set_text(up_label, LV_SYMBOL_UP);
+    lv_obj_center(up_label);
 
     createdTimeInMs = (unsigned long)(esp_timer_get_time() / 1000ULL);
 }
@@ -195,20 +242,60 @@ void handle_hardware_button_press_options(InputEvent *event) {
     if (event->type == INPUT_TYPE_TOUCH) {
         lv_indev_data_t *data = &event->data.touch_data;
         if (data->state == LV_INDEV_STATE_PR) {
-            opt_touch_started = true;
-            opt_touch_start_x = data->point.x;
-            opt_touch_start_y = data->point.y;
+            // Press on scroll up button
+            if (scroll_up_btn && lv_obj_is_valid(scroll_up_btn)) {
+                lv_area_t area;
+                lv_obj_get_coords(scroll_up_btn, &area);
+                if (data->point.x >= area.x1 && data->point.x <= area.x2 &&
+                    data->point.y >= area.y1 && data->point.y <= area.y2) {
+                    scroll_options_up(NULL);
+                    opt_touch_started = false;
+                    return;
+                }
+            }
+            // Press on scroll down button
+            if (scroll_down_btn && lv_obj_is_valid(scroll_down_btn)) {
+                lv_area_t area;
+                lv_obj_get_coords(scroll_down_btn, &area);
+                if (data->point.x >= area.x1 && data->point.x <= area.x2 &&
+                    data->point.y >= area.y1 && data->point.y <= area.y2) {
+                    scroll_options_down(NULL);
+                    opt_touch_started = false;
+                    return;
+                }
+            }
+            // Record touch start only once (ignore movement events)
+            if (!opt_touch_started) {
+                opt_touch_started = true;
+                opt_touch_start_x = data->point.x;
+                opt_touch_start_y = data->point.y;
+            }
             return;
         }
-        if (data->state == LV_INDEV_STATE_REL && opt_touch_started) {
+        if (data->state == LV_INDEV_STATE_REL) {
+            // Only process if a touch start was registered
+            if (!opt_touch_started) return;
             int dx = data->point.x - opt_touch_start_x;
             int dy = data->point.y - opt_touch_start_y;
             opt_touch_started = false;
-            int threshold = LV_VER_RES / OPT_SWIPE_THRESHOLD_RATIO;
-            if (abs(dy) > threshold && abs(dy) > abs(dx)) {
+            // Define thresholds
+            int threshold_y = LV_VER_RES / OPT_SWIPE_THRESHOLD_RATIO;
+            int threshold_x = LV_HOR_RES / OPT_SWIPE_THRESHOLD_RATIO;
+            // Vertical swipe -> scroll
+            if (abs(dy) > threshold_y) {
                 lv_obj_scroll_by_bounded(menu_container, 0, dy, LV_ANIM_OFF);
                 return;
             }
+            // Horizontal swipe -> ignore selection
+            if (abs(dx) > threshold_x) return;
+            // Check tap within menu container bounds
+            lv_area_t container_area;
+            lv_obj_get_coords(menu_container, &container_area);
+            if (data->point.x < container_area.x1 || data->point.x > container_area.x2 ||
+                data->point.y < container_area.y1 || data->point.y > container_area.y2) {
+                return;
+            }
+            // Treat as tap -> select option
             for (int i = 0; i < num_items; i++) {
                 lv_obj_t *btn = lv_obj_get_child(menu_container, i);
                 lv_area_t btn_area;
@@ -220,6 +307,7 @@ void handle_hardware_button_press_options(InputEvent *event) {
                     return;
                 }
             }
+            return;
         }
         return;
     } else if (event->type == INPUT_TYPE_JOYSTICK) {
