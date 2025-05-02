@@ -31,7 +31,11 @@ static lv_obj_t *scroll_down_btn = NULL;
 #define SCROLL_BTN_PADDING 5
 static bool touch_on_scroll_btn = false; // Flag active between press and release on scroll buttons
 
+// Add button declaration for back button
+static lv_obj_t *back_btn = NULL;
+
 static void select_option_item(int index); // Forward Declaration
+static void back_event_cb(lv_event_t *e); // Forward Declaration for back button callback
 
 // Add scroll functions
 static void scroll_options_up(lv_event_t *e) {
@@ -177,26 +181,38 @@ void options_menu_create() {
     select_option_item(0);
     display_manager_add_status_bar(options_menu_type_to_string(SelectedMenuType));
 
-    // Create scroll buttons
-    scroll_down_btn = lv_btn_create(root);
-    lv_obj_set_size(scroll_down_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
-    lv_obj_align(scroll_down_btn, LV_ALIGN_BOTTOM_RIGHT, -SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING);
-    lv_obj_set_style_bg_color(scroll_down_btn, lv_color_hex(0x333333), LV_PART_MAIN);
-    lv_obj_set_style_radius(scroll_down_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
-    lv_obj_add_event_cb(scroll_down_btn, scroll_options_down, LV_EVENT_CLICKED, NULL);
-    lv_obj_t *down_label = lv_label_create(scroll_down_btn);
-    lv_label_set_text(down_label, LV_SYMBOL_DOWN);
-    lv_obj_center(down_label);
-
-    scroll_up_btn = lv_btn_create(root);
+    // Create scroll buttons and back button
+    scroll_up_btn = lv_btn_create(root); // UP button now on the RIGHT
     lv_obj_set_size(scroll_up_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
-    lv_obj_align(scroll_up_btn, LV_ALIGN_BOTTOM_LEFT, SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING);
+    lv_obj_align(scroll_up_btn, LV_ALIGN_BOTTOM_RIGHT, -SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align right
     lv_obj_set_style_bg_color(scroll_up_btn, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_set_style_radius(scroll_up_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
     lv_obj_add_event_cb(scroll_up_btn, scroll_options_up, LV_EVENT_CLICKED, NULL);
     lv_obj_t *up_label = lv_label_create(scroll_up_btn);
-    lv_label_set_text(up_label, LV_SYMBOL_UP);
+    lv_label_set_text(up_label, LV_SYMBOL_UP); // Keep UP symbol
     lv_obj_center(up_label);
+
+    scroll_down_btn = lv_btn_create(root); // DOWN button now on the LEFT
+    lv_obj_set_size(scroll_down_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
+    lv_obj_align(scroll_down_btn, LV_ALIGN_BOTTOM_LEFT, SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align left
+    lv_obj_set_style_bg_color(scroll_down_btn, lv_color_hex(0x333333), LV_PART_MAIN);
+    lv_obj_set_style_radius(scroll_down_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_add_event_cb(scroll_down_btn, scroll_options_down, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *down_label = lv_label_create(scroll_down_btn);
+    lv_label_set_text(down_label, LV_SYMBOL_DOWN); // Keep DOWN symbol
+    lv_obj_center(down_label);
+
+    // Create Back button
+    back_btn = lv_btn_create(root);
+    lv_obj_set_size(back_btn, SCROLL_BTN_SIZE + 20, SCROLL_BTN_SIZE); // Slightly wider
+    lv_obj_align(back_btn, LV_ALIGN_BOTTOM_MID, 0, -SCROLL_BTN_PADDING); // Align center bottom
+    lv_obj_set_style_bg_color(back_btn, lv_color_hex(0x555555), LV_PART_MAIN); // Different color
+    lv_obj_set_style_radius(back_btn, 5, LV_PART_MAIN); // Slightly rounded rectangle
+    lv_obj_set_style_pad_hor(back_btn, 10, LV_PART_MAIN); // Add horizontal padding
+    lv_obj_add_event_cb(back_btn, back_event_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *back_label = lv_label_create(back_btn);
+    lv_label_set_text(back_label, LV_SYMBOL_LEFT " Back"); // Back symbol and text
+    lv_obj_center(back_label);
 
     createdTimeInMs = (unsigned long)(esp_timer_get_time() / 1000ULL);
 }
@@ -261,6 +277,17 @@ void handle_hardware_button_press_options(InputEvent *event) {
                     data->point.y >= area.y1 && data->point.y <= area.y2) {
                     scroll_options_down(NULL);
                     opt_touch_started = false;
+                    return;
+                }
+            }
+            // Press on back button
+            if (back_btn && lv_obj_is_valid(back_btn)) {
+                lv_area_t area;
+                lv_obj_get_coords(back_btn, &area);
+                if (data->point.x >= area.x1 && data->point.x <= area.x2 &&
+                    data->point.y >= area.y1 && data->point.y <= area.y2) {
+                    back_event_cb(NULL); // Trigger back action
+                    opt_touch_started = false; // Prevent further processing
                     return;
                 }
             }
@@ -650,6 +677,9 @@ void options_menu_destroy(void) {
         lv_obj_clean(options_menu_view.root);
         lv_obj_del(options_menu_view.root);
         options_menu_view.root = NULL;
+        back_btn = NULL; // Ensure back button is cleared
+        scroll_up_btn = NULL; // Ensure scroll buttons are cleared
+        scroll_down_btn = NULL;
 
         selected_item_index = 0;
         num_items = 0;
@@ -664,3 +694,14 @@ View options_menu_view = {.root = NULL,
                           .input_callback = handle_hardware_button_press_options,
                           .name = "Options Screen",
                           .get_hardwareinput_callback = get_options_menu_callback};
+
+static void back_event_cb(lv_event_t *e) {
+selected_item_index = 0;
+num_items = 0;
+menu_container = NULL;
+root = NULL;
+back_btn = NULL; // Clear back button reference
+scroll_up_btn = NULL; // Clear scroll button references
+scroll_down_btn = NULL;
+display_manager_switch_view(&main_menu_view);
+}

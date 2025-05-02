@@ -2,6 +2,10 @@
 
 ## Revival v1.5
 
+### Added
+
+- Display
+  - Add back button to options screen bottom center to return to main menu
 
 ### Changed
 
