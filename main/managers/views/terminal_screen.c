@@ -5,6 +5,7 @@
 #include "freertos/event_groups.h"
 #include "managers/views/main_menu_screen.h"
 #include "managers/wifi_manager.h"
+#include "managers/display_manager.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -124,10 +125,19 @@ void terminal_view_create(void) {
   lv_obj_set_scrollbar_mode(terminal_view.root, LV_SCROLLBAR_MODE_OFF);
   lv_obj_set_style_pad_all(terminal_view.root, 0, 0);
 
-  int textarea_height = (LV_HOR_RES > MIN_SCREEN_SIZE && LV_VER_RES > MIN_SCREEN_SIZE) ? 
-                       LV_VER_RES - (BUTTON_SIZE + BUTTON_PADDING * 2) : LV_VER_RES;
+  // Define status bar height (as seen in display_manager.c)
+  const int STATUS_BAR_HEIGHT = 20; 
+  
+  // Calculate available height, considering status bar and bottom buttons (if present)
+  int available_height = LV_VER_RES - STATUS_BAR_HEIGHT;
+  if (LV_HOR_RES > MIN_SCREEN_SIZE && LV_VER_RES > MIN_SCREEN_SIZE) {
+      available_height -= (BUTTON_SIZE + BUTTON_PADDING * 2);
+  }
+  int textarea_height = available_height;
 
   terminal_page = lv_list_create(terminal_view.root);
+  // Set position below status bar
+  lv_obj_set_pos(terminal_page, 0, STATUS_BAR_HEIGHT); 
   lv_obj_set_size(terminal_page, LV_HOR_RES, textarea_height);
   lv_obj_set_style_bg_color(terminal_page, lv_color_black(), 0);
   lv_obj_set_style_pad_all(terminal_page, 0, 0);
