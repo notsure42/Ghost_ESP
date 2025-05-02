@@ -23,7 +23,8 @@
 - Display
   - Fixed an issue where an option would be duplicated and freeze the device.
 
-
+- Power
+  - Fixed an issue where the device was reporting that it was not charging when it was.
 
 
 ## Revival v1.4.9
