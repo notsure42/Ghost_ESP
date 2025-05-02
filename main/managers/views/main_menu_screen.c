@@ -195,7 +195,6 @@ void main_menu_create(void) {
     lv_obj_set_scrollbar_mode(menu_container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_align(menu_container, LV_ALIGN_CENTER, 0, 0);
 
-    selected_item_index = 0;
     update_menu_item(false);
 
     display_manager_add_status_bar(LV_HOR_RES > 128 ? "Main Menu" : "");

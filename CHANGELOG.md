@@ -16,6 +16,7 @@
   - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
   - Offset terminal page vertically by status bar height and adjust its height accordingly.
   - Optimize terminal screen by batching text additions
+  - Remove index reset in main_menu_create to maintain selection across view switches.
   
 ### Bug Fixes
 
