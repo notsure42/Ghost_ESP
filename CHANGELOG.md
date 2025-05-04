@@ -50,7 +50,8 @@
   - Skip first touch event while backlight is dimmed so tap only wakes the screen without registering input
   - Fixed an issue where the numpad would register 2 inputs for a single tap.
   - Fixed screen timeout only resetting on the first wake-up tap
-
+  - Add tap to wake functionality to non battery config models
+  
 - Power
   - Fixed an issue where the device was reporting that it was not charging when it was.
 

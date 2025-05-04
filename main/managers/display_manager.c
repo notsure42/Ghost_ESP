@@ -610,14 +610,12 @@ void hardware_input_task(void *pvParameters) {
     if (touch_data.state == LV_INDEV_STATE_PR && !touch_active) {
       bool skip_event = false;
       last_touch_time = xTaskGetTickCount();
-#ifdef CONFIG_HAS_BATTERY
       if (is_backlight_dimmed) {
         set_backlight_brightness(1);
         is_backlight_dimmed = false;
         skip_event = true;
         vTaskDelay(pdMS_TO_TICKS(100));
       }
-#endif
       if (!skip_event) {
         touch_active = true;
         InputEvent event;
