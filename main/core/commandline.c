@@ -184,25 +184,32 @@ void handle_stop_deauth(int argc, char **argv) {
 
 void handle_select_cmd(int argc, char **argv) {
     if (argc != 3) {
-        printf("Usage: select -a <number>\n");
-        TERMINAL_VIEW_ADD_TEXT("Usage: select -a <number>\n");
+        printf("Usage: select -a <number> or select -s <number>\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: select -a <number> or select -s <number>\n");
         return;
     }
 
     if (strcmp(argv[1], "-a") == 0) {
         char *endptr;
-
         int num = (int)strtol(argv[2], &endptr, 10);
-
         if (*endptr == '\0') {
             wifi_manager_select_ap(num);
         } else {
             printf("Error: is not a valid number.\n");
             TERMINAL_VIEW_ADD_TEXT("Error: is not a valid number.\n");
         }
+    } else if (strcmp(argv[1], "-s") == 0) {
+        char *endptr;
+        int num = (int)strtol(argv[2], &endptr, 10);
+        if (*endptr == '\0') {
+            wifi_manager_select_station(num);
+        } else {
+            printf("Error: is not a valid number.\n");
+            TERMINAL_VIEW_ADD_TEXT("Error: is not a valid number.\n");
+        }
     } else {
-        printf("Invalid option. Usage: select -a <number>\n");
-        TERMINAL_VIEW_ADD_TEXT("Invalid option. Usage: select -a <number>\n");
+        printf("Invalid option. Usage: select -a <number> or select -s <number>\n");
+        TERMINAL_VIEW_ADD_TEXT("Invalid option. Usage: select -a <number> or select -s <number>\n");
     }
 }
 
