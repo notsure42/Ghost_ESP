@@ -123,6 +123,9 @@ void wifi_manager_get_scan_results_data(uint16_t *count, wifi_ap_record_t **aps)
 // Select an access point from the scan results based on index
 void wifi_manager_select_ap(int index);
 
+// Select a station from the station list based on index
+void wifi_manager_select_station(int index);
+
 // broadcast ap beacon with optional ssid
 esp_err_t wifi_manager_broadcast_ap(const char *ssid);
 

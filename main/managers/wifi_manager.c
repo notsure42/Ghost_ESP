@@ -55,6 +55,7 @@ static char domain_str[128] = "";
 EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 wifi_ap_record_t selected_ap;
+static station_ap_pair_t selected_station;
 bool redirect_handled = false;
 httpd_handle_t evilportal_server = NULL;
 dns_server_handle_t dns_handle;
@@ -1211,18 +1212,41 @@ void wifi_manager_list_stations() {
         printf("No stations found.\n");
         return;
     }
-
     printf("Listing all stations and their associated APs:\n");
-
     for (int i = 0; i < station_count; i++) {
-        printf("Station MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
-               "     -> AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
-               station_ap_list[i].station_mac[0], station_ap_list[i].station_mac[1],
-               station_ap_list[i].station_mac[2], station_ap_list[i].station_mac[3],
-               station_ap_list[i].station_mac[4], station_ap_list[i].station_mac[5],
-               station_ap_list[i].ap_bssid[0], station_ap_list[i].ap_bssid[1],
-               station_ap_list[i].ap_bssid[2], station_ap_list[i].ap_bssid[3],
-               station_ap_list[i].ap_bssid[4], station_ap_list[i].ap_bssid[5]);
+        char ssid_str[33];
+        char sanitized_ssid[33];
+        bool found = false;
+        for (int j = 0; j < ap_count; j++) {
+            if (memcmp(scanned_aps[j].bssid, station_ap_list[i].ap_bssid, 6) == 0) {
+                memcpy(ssid_str, scanned_aps[j].ssid, 32);
+                ssid_str[32] = '\0';
+                if (strlen(ssid_str) == 0) {
+                    strcpy(ssid_str, "(Hidden)");
+                }
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            strcpy(ssid_str, "(Unknown AP)");
+        }
+        int len = strlen(ssid_str);
+        for (int k = 0; k < len; k++) {
+            char c = ssid_str[k];
+            sanitized_ssid[k] = (c >= 32 && c <= 126) ? c : '.';
+        }
+        sanitized_ssid[len] = '\0';
+        printf("[%d] Station MAC: %02X:%02X:%02X:%02X:%02X:%02X, AP SSID: %s, AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
+               i,
+               station_ap_list[i].station_mac[0], station_ap_list[i].station_mac[1], station_ap_list[i].station_mac[2], station_ap_list[i].station_mac[3], station_ap_list[i].station_mac[4], station_ap_list[i].station_mac[5],
+               sanitized_ssid,
+               station_ap_list[i].ap_bssid[0], station_ap_list[i].ap_bssid[1], station_ap_list[i].ap_bssid[2], station_ap_list[i].ap_bssid[3], station_ap_list[i].ap_bssid[4], station_ap_list[i].ap_bssid[5]);
+        TERMINAL_VIEW_ADD_TEXT("[%d] Station MAC: %02X:%02X:%02X:%02X:%02X:%02X, AP SSID: %s, AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
+                               i,
+                               station_ap_list[i].station_mac[0], station_ap_list[i].station_mac[1], station_ap_list[i].station_mac[2], station_ap_list[i].station_mac[3], station_ap_list[i].station_mac[4], station_ap_list[i].station_mac[5],
+                               sanitized_ssid,
+                               station_ap_list[i].ap_bssid[0], station_ap_list[i].ap_bssid[1], station_ap_list[i].ap_bssid[2], station_ap_list[i].ap_bssid[3], station_ap_list[i].ap_bssid[4], station_ap_list[i].ap_bssid[5]);
     }
 }
 
@@ -1464,6 +1488,49 @@ void wifi_manager_select_ap(int index) {
 
     printf("Selected Access Point Successfully\n");
     TERMINAL_VIEW_ADD_TEXT("Selected Access Point Successfully\n");
+}
+
+void wifi_manager_select_station(int index) {
+    if (station_count == 0) {
+        printf("No stations found.\n");
+        TERMINAL_VIEW_ADD_TEXT("No stations found.\n");
+        return;
+    }
+    if (index < 0 || index >= station_count) {
+        printf("Invalid station index: %d. Index should be between 0 and %d\n", index, station_count - 1);
+        TERMINAL_VIEW_ADD_TEXT("Invalid station index: %d. Index should be between 0 and %d\n", index, station_count - 1);
+        return;
+    }
+    selected_station = station_ap_list[index];
+    char ssid_str[33];
+    char sanitized_ssid[33];
+    for (int i = 0; i < ap_count; i++) {
+        if (memcmp(scanned_aps[i].bssid, selected_station.ap_bssid, 6) == 0) {
+            memcpy(ssid_str, scanned_aps[i].ssid, 32);
+            ssid_str[32] = '\0';
+            int len = strlen(ssid_str);
+            for (int j = 0; j < len; j++) {
+                char c = ssid_str[j];
+                sanitized_ssid[j] = (c >= 32 && c <= 126) ? c : '.';
+            }
+            sanitized_ssid[len] = '\0';
+            break;
+        }
+    }
+    printf("Selected Station %d: Station MAC: %02X:%02X:%02X:%02X:%02X:%02X\n    -> AP SSID: %s\n    -> AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
+           index,
+           selected_station.station_mac[0], selected_station.station_mac[1], selected_station.station_mac[2],
+           selected_station.station_mac[3], selected_station.station_mac[4], selected_station.station_mac[5],
+           sanitized_ssid,
+           selected_station.ap_bssid[0], selected_station.ap_bssid[1], selected_station.ap_bssid[2],
+           selected_station.ap_bssid[3], selected_station.ap_bssid[4], selected_station.ap_bssid[5]);
+    TERMINAL_VIEW_ADD_TEXT("Selected Station %d: Station MAC: %02X:%02X:%02X:%02X:%02X:%02X\n    -> AP SSID: %s\n    -> AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
+           index,
+           selected_station.station_mac[0], selected_station.station_mac[1], selected_station.station_mac[2],
+           selected_station.station_mac[3], selected_station.station_mac[4], selected_station.station_mac[5],
+           sanitized_ssid,
+           selected_station.ap_bssid[0], selected_station.ap_bssid[1], selected_station.ap_bssid[2],
+           selected_station.ap_bssid[3], selected_station.ap_bssid[4], selected_station.ap_bssid[5]);
 }
 
 #define MAX_PAYLOAD 64
