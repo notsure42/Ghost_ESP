@@ -22,6 +22,7 @@
 #include <vendor/dial_client.h>
 #include "esp_wifi.h"
 #include "managers/default_portal.h"
+#include <time.h>
 
 static Command *command_list_head = NULL;
 TaskHandle_t VisualizerHandle = NULL;
@@ -772,6 +773,21 @@ void handle_startwd(int argc, char **argv) {
     }
 }
 
+void handle_timezone_cmd(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: timezone <TZ_STRING>\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: timezone <TZ_STRING>\n");
+        return;
+    }
+    const char *tz = argv[1];
+    settings_set_timezone_str(&G_Settings, tz);
+    settings_save(&G_Settings);
+    setenv("TZ", tz, 1);
+    tzset();
+    printf("Timezone set to: %s\n", tz);
+    TERMINAL_VIEW_ADD_TEXT("Timezone set to: %s\n", tz);
+}
+
 void handle_scan_ports(int argc, char **argv) {
     if (argc < 2) {
         printf("Usage:\n");
@@ -1157,6 +1173,13 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("scanall\n");
     TERMINAL_VIEW_ADD_TEXT("    Desc: Combined AP/STA scan & display.\n");
     TERMINAL_VIEW_ADD_TEXT("    Usage: scanall [seconds]\n\n");
+
+    printf("timezone\n");
+    printf("    Description: Set the display timezone for the clock view.\n");
+    printf("    Usage: timezone <TZ_STRING>\n\n");
+    TERMINAL_VIEW_ADD_TEXT("timezone\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Set the display timezone for the clock view.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: timezone <TZ_STRING>\n\n");
 }
 
 void handle_capture(int argc, char **argv) {
@@ -1686,6 +1709,7 @@ void register_commands() {
     register_command("sd_pins_spi", handle_sd_pins_spi);
     register_command("sd_save_config", handle_sd_save_config);
     register_command("scanall", handle_scanall);
+    register_command("timezone", handle_timezone_cmd);
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }
