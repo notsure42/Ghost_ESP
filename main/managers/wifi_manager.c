@@ -1138,7 +1138,7 @@ void wifi_manager_start_scan() {
         .show_hidden = true,
         .scan_time = {.active.min = 450, .active.max = 500, .passive = 500}};
 
-    rgb_manager_set_color(&rgb_manager, 0, 50, 255, 50, false);
+    rgb_manager_set_color(&rgb_manager, -1, 50, 255, 50, false);
 
     printf("WiFi Scan started\n");
     printf("Please wait 5 Seconds...\n");
@@ -1178,7 +1178,7 @@ void wifi_manager_stop_scan() {
     }
 
     wifi_manager_stop_monitor_mode();
-    rgb_manager_set_color(&rgb_manager, 0, 0, 0, 0, false);
+    rgb_manager_set_color(&rgb_manager, -1, 0, 0, 0, false);
 
     uint16_t initial_ap_count = 0;
     err = esp_wifi_scan_get_ap_num(&initial_ap_count);
@@ -1459,7 +1459,7 @@ void wifi_manager_start_deauth() {
         printf("Restarting Wi-Fi\n");
         xTaskCreate(wifi_deauth_task, "deauth_task", 4096, NULL, 5, &deauth_task_handle);
         beacon_task_running = true;
-        rgb_manager_set_color(&rgb_manager, 0, 255, 0, 0, false);
+        rgb_manager_set_color(&rgb_manager, -1, 255, 0, 0, false);
     } else {
         printf("Deauth already running.\n");
         TERMINAL_VIEW_ADD_TEXT("Deauth already running.\n");
@@ -2554,7 +2554,7 @@ void wifi_manager_stop_beacon() {
         }
 
         // Turn off RGB indicator
-        rgb_manager_set_color(&rgb_manager, 0, 0, 0, 0, false);
+        rgb_manager_set_color(&rgb_manager, -1, 0, 0, 0, false);
 
         // Stop WiFi completely
         esp_wifi_stop();
@@ -2770,7 +2770,7 @@ void wifi_manager_start_scan_with_time(int seconds) {
         .show_hidden = true
     };
 
-    rgb_manager_set_color(&rgb_manager, 0, 50, 255, 50, false);
+    rgb_manager_set_color(&rgb_manager, -1, 50, 255, 50, false);
 
     printf("WiFi Scan started\n");
     printf("Please wait %d Seconds...\n", seconds);

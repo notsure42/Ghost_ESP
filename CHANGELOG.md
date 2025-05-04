@@ -40,7 +40,8 @@
 - Power
   - Suspend LVGL, status bar update timer, and misc tasks when backlight is off
 
-
+- RGB
+  - Refactored rgb_manager_set_color to use is_separate_pins flag instead of compile-time directives
 
 ### Bug Fixes
 
@@ -55,6 +56,7 @@
 
 - RGB
   - Persist RGB pin settings to NVS and auto-init from saved config, closes [jaylikesbunda/Ghost_ESP#5](https://github.com/jaylikesbunda/Ghost_ESP/issues/5)
+
 ## Revival v1.4.9
 
 ### ❤️ New Stuff

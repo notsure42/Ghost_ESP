@@ -1406,8 +1406,11 @@ void handle_rgb_mode(int argc, char **argv) {
         printf("Strobe mode activated\n");
         TERMINAL_VIEW_ADD_TEXT("Strobe mode activated\n");
     } else if (strcasecmp(argv[1], "off") == 0) {
-        rgb_manager_set_color(&rgb_manager, 0, 0, 0, 0, false);
-        led_strip_refresh(rgb_manager.strip);
+        rgb_manager_set_color(&rgb_manager, -1, 0, 0, 0, false);
+        if (!rgb_manager.is_separate_pins) {
+            led_strip_clear(rgb_manager.strip);
+            led_strip_refresh(rgb_manager.strip);
+        }
         printf("RGB disabled\n");
         TERMINAL_VIEW_ADD_TEXT("RGB disabled\n");
     } else {
