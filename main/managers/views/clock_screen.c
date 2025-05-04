@@ -8,7 +8,7 @@
 static lv_obj_t *clock_container;
 static lv_obj_t *time_label;
 static lv_obj_t *date_label;
-static lv_timer_t *clock_timer;
+lv_timer_t *clock_timer = NULL;
 
 static void digital_clock_cb(lv_timer_t *timer) {
     time_t now;

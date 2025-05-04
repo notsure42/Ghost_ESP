@@ -32,7 +32,12 @@
 - Commands
   - List stations with sanitized ascii and numeric index
   - Label APs with blank SSID fields as "Hidden"
-  
+
+- Power
+  - Suspend LVGL, status bar update timer, and misc tasks when backlight is off
+
+
+
 ### Bug Fixes
 
 - Display

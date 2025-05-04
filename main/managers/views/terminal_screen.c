@@ -26,7 +26,7 @@ static bool is_stopping = false;
 #define BUTTON_PADDING 5
 
 static lv_obj_t *back_btn = NULL;
-static lv_timer_t *terminal_update_timer = NULL;
+lv_timer_t *terminal_update_timer = NULL;
 
 static void scroll_terminal_up(void);
 static void scroll_terminal_down(void);

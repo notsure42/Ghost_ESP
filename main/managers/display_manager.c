@@ -11,6 +11,7 @@
 #include "managers/views/main_menu_screen.h"
 #include "managers/views/options_screen.h"
 #include "managers/views/terminal_screen.h"
+#include "managers/views/clock_screen.h"
 #include <stdlib.h>
 
 #ifdef CONFIG_USE_CARDPUTER
@@ -506,11 +507,15 @@ void set_backlight_brightness(uint8_t percentage) {
   if (percentage == 0) {
     if (status_update_timer) lv_timer_pause(status_update_timer);
     if (lvgl_task_handle) vTaskSuspend(lvgl_task_handle);
-    if (input_task_handle) vTaskSuspend(input_task_handle);
+    if (rainbow_timer) lv_timer_pause(rainbow_timer);
+    if (terminal_update_timer) lv_timer_pause(terminal_update_timer);
+    if (clock_timer) lv_timer_pause(clock_timer);
   } else {
     if (status_update_timer) lv_timer_resume(status_update_timer);
     if (lvgl_task_handle) vTaskResume(lvgl_task_handle);
-    if (input_task_handle) vTaskResume(input_task_handle);
+    if (rainbow_timer) lv_timer_resume(rainbow_timer);
+    if (terminal_update_timer) lv_timer_resume(terminal_update_timer);
+    if (clock_timer) lv_timer_resume(clock_timer);
   }
 }
 
