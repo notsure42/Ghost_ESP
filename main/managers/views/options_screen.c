@@ -67,6 +67,9 @@ const char *options_menu_type_to_string(EOptionsMenuType menuType) {
 
 static const char *wifi_options[] = {"Scan Access Points",
                                      "Select AP",
+                                     "Scan Stations",
+                                     "List Stations",
+                                     "Select Station",
                                      "Scan LAN Devices",
                                      "Select LAN",
                                      "Scan All (AP & Station)",
@@ -401,14 +404,21 @@ void option_event_cb(lv_event_t *e) {
     }
 
     else if (strcmp(Selected_Option, "Scan Stations") == 0) {
-        if (strlen((const char *)selected_ap.ssid) > 0) {
-            display_manager_switch_view(&terminal_view);
-            simulateCommand("scansta");
-            view_switched = true;
-        } else {
-            error_popup_create("You Need to Select a Scanned AP First...");
-            
-        }
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("scansta");
+        view_switched = true;
+    }
+
+    else if (strcmp(Selected_Option, "List Stations") == 0) {
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("list -s");
+        view_switched = true;
+    }
+
+    else if (strcmp(Selected_Option, "Select Station") == 0) {
+        set_number_pad_mode(NP_MODE_STA);
+        display_manager_switch_view(&number_pad_view);
+        view_switched = true;
     }
 
     else if (strcmp(Selected_Option, "Beacon Spam - Random") == 0) {

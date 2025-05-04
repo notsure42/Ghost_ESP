@@ -14,6 +14,7 @@
   - Add back button to options screen bottom center to return to main menu
   - Added swipe handling for the main menu and app gallery views
   - Add vertical swipe navigation for scrolling of menu items.
+  - Added station scanning and the new station options to the wifi options screen
 
 ### Changed
 
@@ -22,7 +23,7 @@
   - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
   - Offset terminal page vertically by status bar height and adjust its height accordingly.
   - Optimize terminal screen by batching text additions
-  - Remove index reset in main_menu_create to maintain selection across view switches.
+  - Remove index reset in main_menu_create to maintain selection across view switches
 
 - Commands
   - List stations with sanitized ascii and numeric index
@@ -33,6 +34,8 @@
 - Display
   - Fixed an issue where an option would be duplicated and freeze the device.
   - Skip first touch event while backlight is dimmed so tap only wakes the screen without registering input
+  - Fixed an issue where the numpad would register 2 inputs for a single tap.
+  
 - Power
   - Fixed an issue where the device was reporting that it was not charging when it was.
 

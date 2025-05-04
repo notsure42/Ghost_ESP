@@ -7,6 +7,7 @@ extern View number_pad_view;
 
 typedef enum {
     NP_MODE_AP,
+    NP_MODE_STA,
     NP_MODE_LAN
 } ENumberPadMode;
 
