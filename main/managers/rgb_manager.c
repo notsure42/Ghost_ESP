@@ -374,9 +374,9 @@ esp_err_t rgb_manager_set_color(RGBManager_t *rgb_manager, int led_idx,
         if (ired == 255 && igreen == 255 && iblue == 255) {
             // Turn off LEDs by setting duty cycle to 0 or stopping
             // Using stop might be better if it properly handles re-enabling
-            ledc_stop(LEDC_MODE, LEDC_CHANNEL_RED, 0); // Use idle level 0 (off)
-            ledc_stop(LEDC_MODE, LEDC_CHANNEL_GREEN, 0);
-            ledc_stop(LEDC_MODE, LEDC_CHANNEL_BLUE, 0);
+            ledc_stop(LEDC_MODE, LEDC_CHANNEL_RED, 1);
+            ledc_stop(LEDC_MODE, LEDC_CHANNEL_GREEN, 1);
+            ledc_stop(LEDC_MODE, LEDC_CHANNEL_BLUE, 1);
         } else {
             // Ensure channels are running before setting duty
             // This might be redundant if ledc_channel_config ensures they start
