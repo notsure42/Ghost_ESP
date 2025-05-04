@@ -102,6 +102,10 @@ static void anim_set_x(void *obj, int32_t v) {
     lv_anim_set_values(&a, start_x, 0);
     lv_anim_set_exec_cb(&a, anim_set_x);
     lv_anim_start(&a);
+
+    if (back_button) {
+        lv_obj_move_foreground(back_button);
+    }
 }
 
 /**
@@ -139,7 +143,9 @@ static void anim_set_x(void *obj, int32_t v) {
 
     selected_app_index = 0;
     update_app_item(false);
-
+    if (back_button) {
+        lv_obj_move_foreground(back_button);
+    }
     display_manager_add_status_bar(LV_VER_RES > 320 ? "Apps Menu" : "Apps");
 }
 
