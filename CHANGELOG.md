@@ -19,6 +19,8 @@
   - Added simple digital clock view
 
 ### Changed
+- Attacks
+  - If station data is available, directly deauth known stations of the AP selected for deauth
 
 - Display
   - Refactored options screen to use lv_list instead of a custom flex container to improve performance
