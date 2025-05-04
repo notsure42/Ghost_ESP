@@ -496,7 +496,7 @@ void hardware_input_task(void *pvParameters) {
   bool touch_active = false;
   int screen_width = LV_HOR_RES;
   int screen_height = LV_VER_RES;
-  TickType_t last_touch_time = 0;
+  TickType_t last_touch_time = xTaskGetTickCount();
   bool is_backlight_dimmed = false;
 
   while (1) {
@@ -510,6 +510,7 @@ void hardware_input_task(void *pvParameters) {
 
         if (key_value != 0 && !touch_active) {
           touch_active = true;
+          last_touch_time = xTaskGetTickCount();
           InputEvent event;
           event.type = INPUT_TYPE_JOYSTICK;
 
@@ -552,6 +553,7 @@ void hardware_input_task(void *pvParameters) {
     for (int i = 0; i < 5; i++) {
       if (joysticks[i].pin >= 0) {
         if (joystick_just_pressed(&joysticks[i])) {
+          last_touch_time = xTaskGetTickCount();
           InputEvent event;
           event.type = INPUT_TYPE_JOYSTICK;
           event.data.joystick_index = i;
@@ -574,29 +576,28 @@ void hardware_input_task(void *pvParameters) {
 
     if (touch_data.state == LV_INDEV_STATE_PR && !touch_active) {
       bool skip_event = false;
+      last_touch_time = xTaskGetTickCount();
 #ifdef CONFIG_HAS_BATTERY
       if (is_backlight_dimmed) {
         set_backlight_brightness(1);
         is_backlight_dimmed = false;
-        last_touch_time = xTaskGetTickCount();
         skip_event = true;
         vTaskDelay(pdMS_TO_TICKS(100));
       }
 #endif
       if (!skip_event) {
-        if (xTaskGetTickCount() - last_touch_time > pdMS_TO_TICKS(500)) {
-          touch_active = true;
-          InputEvent event;
-          event.type = INPUT_TYPE_TOUCH;
-          event.data.touch_data.point.x = touch_data.point.x;
-          event.data.touch_data.point.y = touch_data.point.y;
-          event.data.touch_data.state = touch_data.state;
-          if (xQueueSend(input_queue, &event, pdMS_TO_TICKS(10)) != pdTRUE) {
-            printf("Failed to send touch input to queue\n");
-          }
+        touch_active = true;
+        InputEvent event;
+        event.type = INPUT_TYPE_TOUCH;
+        event.data.touch_data.point.x = touch_data.point.x;
+        event.data.touch_data.point.y = touch_data.point.y;
+        event.data.touch_data.state = touch_data.state;
+        if (xQueueSend(input_queue, &event, pdMS_TO_TICKS(10)) != pdTRUE) {
+          printf("Failed to send touch input to queue\n");
         }
       }
     } else if (touch_data.state == LV_INDEV_STATE_REL && touch_active) {
+      last_touch_time = xTaskGetTickCount();
       InputEvent event;
       event.type = INPUT_TYPE_TOUCH;
       event.data.touch_data = touch_data;
@@ -606,22 +607,16 @@ void hardware_input_task(void *pvParameters) {
       touch_active = false;
     }
 
-#ifdef CONFIG_HAS_BATTERY
-    uint32_t current_timeout = G_Settings.display_timeout_ms;
-    if ((xTaskGetTickCount() - last_touch_time >
-             pdMS_TO_TICKS(current_timeout) &&
-         touch_data.state == LV_INDEV_STATE_REL)) {
-      ESP_LOGD(TAG, "Display timeout check: last_touch=%lu, timeout=%lu",
-               last_touch_time, current_timeout);
-      if (!is_backlight_dimmed) {
-        ESP_LOGI(TAG, "Display timeout reached, dimming backlight");
-        set_backlight_brightness(0);
-        is_backlight_dimmed = true;
-      }
-    }
 #endif
 
-#endif
+    uint32_t current_timeout = G_Settings.display_timeout_ms > 0 ? G_Settings.display_timeout_ms : DEFAULT_DISPLAY_TIMEOUT_MS;
+    if (!is_backlight_dimmed && (xTaskGetTickCount() - last_touch_time > pdMS_TO_TICKS(current_timeout))) {
+      ESP_LOGD(TAG, "Display timeout check: last_touch=%lu, timeout=%lu",
+               (unsigned long)last_touch_time, (unsigned long)current_timeout);
+      ESP_LOGI(TAG, "Display timeout reached, dimming backlight");
+      set_backlight_brightness(0);
+      is_backlight_dimmed = true;
+    }
 
     vTaskDelay(tick_interval);
   }
