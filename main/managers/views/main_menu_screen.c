@@ -5,6 +5,7 @@
 #include "managers/views/app_gallery_screen.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "managers/views/clock_screen.h"
 
 static const char *TAG = "MainMenu";
 
@@ -27,7 +28,8 @@ static menu_item_t menu_items[] = {
     {"BLE", &bluetooth},
     {"WiFi", &wifi},
     {"GPS", &Map},
-    {"Apps", &GESPAppGallery}
+    {"Apps", &GESPAppGallery},
+    {"Clock", &clock_icon}
 };
 
 static int num_items = sizeof(menu_items) / sizeof(menu_items[0]);
@@ -39,6 +41,7 @@ static void init_menu_colors(void) {
     menu_items[1].border_color = lv_color_hex(0xD32F2F);
     menu_items[2].border_color = lv_color_hex(0x388E3C);
     menu_items[3].border_color = lv_color_hex(0x7B1FA2);
+    menu_items[4].border_color = lv_color_hex(0xFFB300);
 }
 
 // Animation callback wrapper
@@ -78,8 +81,11 @@ static void update_menu_item(bool slide_left) {
     lv_obj_set_size(icon, icon_size, icon_size);
     lv_img_set_size_mode(icon, LV_IMG_SIZE_MODE_REAL);
     lv_img_set_antialias(icon, false); // Prevent scaling artifacts
-    lv_obj_set_style_img_recolor(icon, menu_items[selected_item_index].border_color, 0); // Keep recoloring for main menu
-    lv_obj_set_style_img_recolor_opa(icon, LV_OPA_COVER, 0);
+    // Only recolor non-clock icons
+    if (selected_item_index != 4) { 
+        lv_obj_set_style_img_recolor(icon, menu_items[selected_item_index].border_color, 0);
+        lv_obj_set_style_img_recolor_opa(icon, LV_OPA_COVER, 0);
+    }
     lv_obj_set_style_clip_corner(icon, false, 0); // Prevent clipping
 
     // Calculate centered position with offsets
@@ -176,6 +182,7 @@ static void handle_menu_item_selection(int item_index) {
         case 1: printf("Wi-Fi selected\n"); SelectedMenuType = OT_Wifi; display_manager_switch_view(&options_menu_view); break;
         case 2: printf("GPS selected\n"); SelectedMenuType = OT_GPS; display_manager_switch_view(&options_menu_view); break;
         case 3: printf("Apps View Selected\n"); display_manager_switch_view(&apps_menu_view); break;
+        case 4: printf("Clock selected\n"); display_manager_switch_view(&clock_view); break;
         default: printf("Unknown menu item selected\n"); break;
     }
 }

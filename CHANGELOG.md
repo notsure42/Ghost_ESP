@@ -15,6 +15,7 @@
   - Added swipe handling for the main menu and app gallery views
   - Add vertical swipe navigation for scrolling of menu items.
   - Added station scanning and the new station options to the wifi options screen
+  - Added simple digital clock view
 
 ### Changed
 
