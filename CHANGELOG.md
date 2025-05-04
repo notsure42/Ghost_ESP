@@ -19,6 +19,7 @@
   - Added simple digital clock view
 
 ### Changed
+
 - Attacks
   - If station data is available, directly deauth known stations of the AP selected for deauth
 
@@ -52,7 +53,8 @@
 - Power
   - Fixed an issue where the device was reporting that it was not charging when it was.
 
-
+- RGB
+  - Persist RGB pin settings to NVS and auto-init from saved config, closes [jaylikesbunda/Ghost_ESP#5](https://github.com/jaylikesbunda/Ghost_ESP/issues/5)
 ## Revival v1.4.9
 
 ### ❤️ New Stuff

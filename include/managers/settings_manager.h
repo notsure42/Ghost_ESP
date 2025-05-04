@@ -77,6 +77,12 @@ typedef struct {
   bool rts_enabled;
   char sta_ssid[65];     // New field for Station SSID (Max 64 + null)
   char sta_password[65]; // New field for Station Password (Max 64 + null)
+
+  // Add RGB pin configuration fields
+  int32_t rgb_data_pin; // Single-pin LED data pin, -1 if not used
+  int32_t rgb_red_pin;  // Separate-pin RGB: red pin, -1 if not used
+  int32_t rgb_green_pin; // Separate-pin RGB: green pin, -1 if not used
+  int32_t rgb_blue_pin;  // Separate-pin RGB: blue pin, -1 if not used
 } FSettings;
 
 // Function declarations
@@ -161,6 +167,12 @@ void settings_set_sta_ssid(FSettings *settings, const char *ssid);
 const char *settings_get_sta_ssid(const FSettings *settings);
 void settings_set_sta_password(FSettings *settings, const char *password);
 const char *settings_get_sta_password(const FSettings *settings);
+
+// Functions to get/set RGB pin configuration
+void settings_set_rgb_data_pin(FSettings *settings, int32_t pin);
+int32_t settings_get_rgb_data_pin(const FSettings *settings);
+void settings_set_rgb_separate_pins(FSettings *settings, int32_t red, int32_t green, int32_t blue);
+void settings_get_rgb_separate_pins(const FSettings *settings, int32_t *red, int32_t *green, int32_t *blue);
 
 static nvs_handle_t nvsHandle;
 

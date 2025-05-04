@@ -1463,28 +1463,30 @@ void handle_setrgb(int argc, char **argv) {
         printf("           (use same value for all pins for single-pin LED strips)\n\n");
         return;
     }
-    
     gpio_num_t red_pin = (gpio_num_t)atoi(argv[1]);
     gpio_num_t green_pin = (gpio_num_t)atoi(argv[2]);
     gpio_num_t blue_pin = (gpio_num_t)atoi(argv[3]);
 
-    // Handle single-pin mode if all values match
-    if(red_pin == green_pin && green_pin == blue_pin) {
+    esp_err_t ret;
+    if (red_pin == green_pin && green_pin == blue_pin) {
         rgb_manager_deinit(&rgb_manager);
-        esp_err_t ret = rgb_manager_init(&rgb_manager, red_pin, 1,  // Use single pin mode
-                                        LED_PIXEL_FORMAT_GRB, LED_MODEL_WS2812,
-                                        GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC); // NC for separate pins
-        if(ret == ESP_OK) {
-            printf("Single-pin RGB configured on GPIO %d!\n", red_pin);
+        ret = rgb_manager_init(&rgb_manager, red_pin, 1, LED_PIXEL_FORMAT_GRB, LED_MODEL_WS2812,
+                               GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC);
+        if (ret == ESP_OK) {
+            settings_set_rgb_data_pin(&G_Settings, red_pin);
+            settings_set_rgb_separate_pins(&G_Settings, -1, -1, -1);
+            settings_save(&G_Settings);
+            printf("Single-pin RGB configured on GPIO %d and saved.\n", red_pin);
         }
     } else {
-        // Original separate pin logic
         rgb_manager_deinit(&rgb_manager);
-        esp_err_t ret = rgb_manager_init(&rgb_manager, GPIO_NUM_NC, 1,
-                                        LED_PIXEL_FORMAT_GRB, LED_MODEL_WS2812,
-                                        red_pin, green_pin, blue_pin);
-        if(ret == ESP_OK) {
-            printf("RGB pins updated successfully!\n");
+        ret = rgb_manager_init(&rgb_manager, GPIO_NUM_NC, 1, LED_PIXEL_FORMAT_GRB, LED_MODEL_WS2812,
+                               red_pin, green_pin, blue_pin);
+        if (ret == ESP_OK) {
+            settings_set_rgb_data_pin(&G_Settings, -1);
+            settings_set_rgb_separate_pins(&G_Settings, red_pin, green_pin, blue_pin);
+            settings_save(&G_Settings);
+            printf("RGB pins updated to R:%d G:%d B:%d and saved.\n", red_pin, green_pin, blue_pin);
         }
     }
 }

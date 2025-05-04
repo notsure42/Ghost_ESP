@@ -39,6 +39,10 @@ static const char *NVS_DISPLAY_TIMEOUT_KEY = "disp_timeout";
 static const char *NVS_ENABLE_RTS_KEY = "rts_enable";
 static const char *NVS_STA_SSID_KEY = "sta_ssid";
 static const char *NVS_STA_PASSWORD_KEY = "sta_password";
+static const char *NVS_RGB_DATA_PIN_KEY = "rgb_data_pin";
+static const char *NVS_RGB_RED_PIN_KEY = "rgb_red_pin";
+static const char *NVS_RGB_GREEN_PIN_KEY = "rgb_green_pin";
+static const char *NVS_RGB_BLUE_PIN_KEY = "rgb_blue_pin";
 
 static const char *TAG = "SettingsManager";
 
@@ -105,6 +109,10 @@ void settings_set_defaults(FSettings *settings) {
   settings->rts_enabled = false;
   strcpy(settings->sta_ssid, ""); // Default empty station SSID
   strcpy(settings->sta_password, ""); // Default empty station password
+  settings->rgb_data_pin = -1;
+  settings->rgb_red_pin = -1;
+  settings->rgb_green_pin = -1;
+  settings->rgb_blue_pin = -1;
 }
 
 void settings_load(FSettings *settings) {
@@ -287,6 +295,31 @@ void settings_load(FSettings *settings) {
   }
 
   printf("Settings loaded from NVS.\n");
+  int32_t tmp;
+  err = nvs_get_i32(nvsHandle, NVS_RGB_DATA_PIN_KEY, &tmp);
+  if (err == ESP_OK) {
+    settings->rgb_data_pin = tmp;
+  } else {
+    settings->rgb_data_pin = -1;
+  }
+  err = nvs_get_i32(nvsHandle, NVS_RGB_RED_PIN_KEY, &tmp);
+  if (err == ESP_OK) {
+    settings->rgb_red_pin = tmp;
+  } else {
+    settings->rgb_red_pin = -1;
+  }
+  err = nvs_get_i32(nvsHandle, NVS_RGB_GREEN_PIN_KEY, &tmp);
+  if (err == ESP_OK) {
+    settings->rgb_green_pin = tmp;
+  } else {
+    settings->rgb_green_pin = -1;
+  }
+  err = nvs_get_i32(nvsHandle, NVS_RGB_BLUE_PIN_KEY, &tmp);
+  if (err == ESP_OK) {
+    settings->rgb_blue_pin = tmp;
+  } else {
+    settings->rgb_blue_pin = -1;
+  }
 }
 
 static void update_rainbow_effect(const FSettings *settings) {
@@ -456,6 +489,23 @@ void settings_save(const FSettings *settings) {
   err = nvs_set_str(nvsHandle, NVS_STA_PASSWORD_KEY, settings->sta_password);
   if (err != ESP_OK) {
     printf("Failed to save STA Password\n");
+  }
+
+  err = nvs_set_i32(nvsHandle, NVS_RGB_DATA_PIN_KEY, settings->rgb_data_pin);
+  if (err != ESP_OK) {
+    printf("Failed to save RGB data pin\n");
+  }
+  err = nvs_set_i32(nvsHandle, NVS_RGB_RED_PIN_KEY, settings->rgb_red_pin);
+  if (err != ESP_OK) {
+    printf("Failed to save RGB red pin\n");
+  }
+  err = nvs_set_i32(nvsHandle, NVS_RGB_GREEN_PIN_KEY, settings->rgb_green_pin);
+  if (err != ESP_OK) {
+    printf("Failed to save RGB green pin\n");
+  }
+  err = nvs_set_i32(nvsHandle, NVS_RGB_BLUE_PIN_KEY, settings->rgb_blue_pin);
+  if (err != ESP_OK) {
+    printf("Failed to save RGB blue pin\n");
   }
 
   if (settings_get_rgb_mode(&G_Settings) == 0) {
@@ -721,4 +771,24 @@ void settings_set_sta_password(FSettings *settings, const char *password) {
 
 const char *settings_get_sta_password(const FSettings *settings) {
   return settings->sta_password;
+}
+
+void settings_set_rgb_data_pin(FSettings *settings, int32_t pin) {
+  settings->rgb_data_pin = pin;
+}
+
+int32_t settings_get_rgb_data_pin(const FSettings *settings) {
+  return settings->rgb_data_pin;
+}
+
+void settings_set_rgb_separate_pins(FSettings *settings, int32_t red, int32_t green, int32_t blue) {
+  settings->rgb_red_pin = red;
+  settings->rgb_green_pin = green;
+  settings->rgb_blue_pin = blue;
+}
+
+void settings_get_rgb_separate_pins(const FSettings *settings, int32_t *red, int32_t *green, int32_t *blue) {
+  if (red) *red = settings->rgb_red_pin;
+  if (green) *green = settings->rgb_green_pin;
+  if (blue) *blue = settings->rgb_blue_pin;
 }
