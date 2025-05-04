@@ -27,6 +27,7 @@
   - Optimize terminal screen by batching text additions
   - Remove index reset in main_menu_create to maintain selection across view switches
   - Default display timeout is now 30 seconds instead of 10
+  - Status bar now updates every second instead of when views change
 
 - Commands
   - List stations with sanitized ascii and numeric index

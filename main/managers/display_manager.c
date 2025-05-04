@@ -56,6 +56,10 @@ lv_obj_t *battery_label = NULL;
 lv_obj_t *mainlabel = NULL;
 
 bool display_manager_init_success = false;
+static bool status_timer_initialized = false;
+static TaskHandle_t lvgl_task_handle = NULL;
+static TaskHandle_t input_task_handle = NULL;
+static lv_timer_t *status_update_timer = NULL;
 
 #define FADE_DURATION_MS 10
 #define DEFAULT_DISPLAY_TIMEOUT_MS 30000
@@ -192,85 +196,96 @@ lv_color_t hex_to_lv_color(const char *hex_str) {
 
 void update_status_bar(bool wifi_enabled, bool bt_enabled, bool sd_card_mounted,
   int batteryPercentage) {
-// Update visibility of status icons
-if (sd_card_mounted) {
-lv_obj_clear_flag(sd_label, LV_OBJ_FLAG_HIDDEN);
-} else {
-lv_obj_add_flag(sd_label, LV_OBJ_FLAG_HIDDEN);
-}
+  // Update visibility of status icons
+  if (sd_card_mounted) {
+    lv_obj_clear_flag(sd_label, LV_OBJ_FLAG_HIDDEN);
+  } else {
+    lv_obj_add_flag(sd_label, LV_OBJ_FLAG_HIDDEN);
+  }
 
-if (bt_enabled) {
-lv_obj_clear_flag(bt_label, LV_OBJ_FLAG_HIDDEN);
-} else {
-lv_obj_add_flag(bt_label, LV_OBJ_FLAG_HIDDEN);
-}
+  if (bt_enabled) {
+    lv_obj_clear_flag(bt_label, LV_OBJ_FLAG_HIDDEN);
+  } else {
+    lv_obj_add_flag(bt_label, LV_OBJ_FLAG_HIDDEN);
+  }
 
-if (wifi_enabled) {
-lv_obj_clear_flag(wifi_label, LV_OBJ_FLAG_HIDDEN);
-} else {
-lv_obj_add_flag(wifi_label, LV_OBJ_FLAG_HIDDEN);
-}
+  if (wifi_enabled) {
+    lv_obj_clear_flag(wifi_label, LV_OBJ_FLAG_HIDDEN);
+  } else {
+    lv_obj_add_flag(wifi_label, LV_OBJ_FLAG_HIDDEN);
+  }
 
-// Update battery icon and percentage
-const char *battery_symbol;
+  // Update battery icon and percentage
+  const char *battery_symbol;
 #ifdef CONFIG_HAS_BATTERY
-if (axp202_is_charging()) {
-battery_symbol = LV_SYMBOL_CHARGE;
-} else {
-battery_symbol = (batteryPercentage > 75) ? LV_SYMBOL_BATTERY_FULL :
-(batteryPercentage > 50) ? LV_SYMBOL_BATTERY_3 :
-(batteryPercentage > 25) ? LV_SYMBOL_BATTERY_2 :
-(batteryPercentage > 10) ? LV_SYMBOL_BATTERY_1 : LV_SYMBOL_BATTERY_EMPTY;
-}
+  if (axp202_is_charging()) {
+    battery_symbol = LV_SYMBOL_CHARGE;
+  } else {
+    battery_symbol = (batteryPercentage > 75) ? LV_SYMBOL_BATTERY_FULL :
+                     (batteryPercentage > 50) ? LV_SYMBOL_BATTERY_3 :
+                     (batteryPercentage > 25) ? LV_SYMBOL_BATTERY_2 :
+                     (batteryPercentage > 10) ? LV_SYMBOL_BATTERY_1 : LV_SYMBOL_BATTERY_EMPTY;
+  }
 #else
-battery_symbol = LV_SYMBOL_BATTERY_FULL; // Default for non-battery configs
+  battery_symbol = LV_SYMBOL_BATTERY_FULL;
 #endif
-lv_label_set_text_fmt(battery_label, "%s %d%%", battery_symbol, batteryPercentage);
+  lv_label_set_text_fmt(battery_label, "%s %d%%", battery_symbol, batteryPercentage);
 
-// Invalidate the status bar to ensure redraw
-lv_obj_invalidate(status_bar);
+  lv_obj_invalidate(status_bar);
 }
 
+static void status_update_cb(lv_timer_t *timer) {
+  if (!status_bar || !lv_obj_is_valid(status_bar)) return;
+  bool HasBluetooth;
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+  HasBluetooth = true;
+#else
+  HasBluetooth = false;
+#endif
+#ifdef CONFIG_HAS_BATTERY
+  uint8_t power_level;
+  axp2101_get_power_level(&power_level);
+  update_status_bar(true, HasBluetooth, sd_card_manager.is_initialized, power_level);
+#else
+  update_status_bar(true, HasBluetooth, sd_card_manager.is_initialized, 100);
+#endif
+}
 
 void display_manager_add_status_bar(const char *CurrentMenuName) {
   status_bar = lv_obj_create(lv_scr_act());
   lv_obj_set_size(status_bar, LV_HOR_RES, 20);
   lv_obj_align(status_bar, LV_ALIGN_TOP_MID, 0, 0);
-  lv_obj_set_style_bg_color(status_bar, lv_color_hex(0x333333), LV_PART_MAIN); // Dark gray background
+  lv_obj_set_style_bg_color(status_bar, lv_color_hex(0x333333), LV_PART_MAIN);
   lv_obj_set_scrollbar_mode(status_bar, LV_SCROLLBAR_MODE_OFF);
   lv_obj_set_style_border_side(status_bar, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
-  lv_obj_set_style_border_width(status_bar, 1, LV_PART_MAIN); // Thinner border
+  lv_obj_set_style_border_width(status_bar, 1, LV_PART_MAIN);
   lv_obj_set_style_border_color(
       status_bar, hex_to_lv_color(settings_get_accent_color_str(&G_Settings)),
       LV_PART_MAIN);
   lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_SCROLLABLE);
 
-  // Left container for menu name
   lv_obj_t *left_container = lv_obj_create(status_bar);
   lv_obj_remove_style_all(left_container);
   lv_obj_set_size(left_container, LV_SIZE_CONTENT, LV_SIZE_CONTENT);
   lv_obj_set_flex_flow(left_container, LV_FLEX_FLOW_ROW);
-  lv_obj_align(left_container, LV_ALIGN_LEFT_MID, 5, 0); // 5px padding from left
+  lv_obj_align(left_container, LV_ALIGN_LEFT_MID, 5, 0);
 
-  // Right container for status icons
   lv_obj_t *right_container = lv_obj_create(status_bar);
   lv_obj_remove_style_all(right_container);
   lv_obj_set_size(right_container, LV_SIZE_CONTENT, 20);
   lv_obj_set_flex_flow(right_container, LV_FLEX_FLOW_ROW);
   lv_obj_set_flex_align(right_container, LV_FLEX_ALIGN_END, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-  lv_obj_set_style_pad_column(right_container, 5, 0); // 5px spacing between icons
-  lv_obj_align(right_container, LV_ALIGN_RIGHT_MID, -5, 0); // 5px padding from right
+  lv_obj_set_style_pad_column(right_container, 5, 0);
+  lv_obj_align(right_container, LV_ALIGN_RIGHT_MID, -5, 0);
 
-  // Menu name (left-aligned)
   mainlabel = lv_label_create(left_container);
   lv_label_set_text(mainlabel, CurrentMenuName);
-  lv_obj_set_style_text_color(mainlabel, lv_color_hex(0x999999), 0); // Lighter gray
+  lv_obj_set_style_text_color(mainlabel, lv_color_hex(0x999999), 0);
   lv_obj_set_style_text_font(mainlabel, &lv_font_montserrat_14, 0);
 
-  // Pre-create all status labels in right container (hidden by default)
   sd_label = lv_label_create(right_container);
   lv_label_set_text(sd_label, LV_SYMBOL_SD_CARD);
-  lv_obj_set_style_text_color(sd_label, lv_color_hex(0xCCCCCC), 0); // Light gray
+  lv_obj_set_style_text_color(sd_label, lv_color_hex(0xCCCCCC), 0);
   lv_obj_set_style_text_font(sd_label, &lv_font_montserrat_12, 0);
   lv_obj_add_flag(sd_label, LV_OBJ_FLAG_HIDDEN);
 
@@ -287,11 +302,10 @@ void display_manager_add_status_bar(const char *CurrentMenuName) {
   lv_obj_add_flag(wifi_label, LV_OBJ_FLAG_HIDDEN);
 
   battery_label = lv_label_create(right_container);
-  lv_label_set_text(battery_label, ""); // Set dynamically in update_status_bar
+  lv_label_set_text(battery_label, "");
   lv_obj_set_style_text_color(battery_label, lv_color_hex(0xCCCCCC), 0);
   lv_obj_set_style_text_font(battery_label, &lv_font_montserrat_12, 0);
 
-  // Initial status update
   bool HasBluetooth;
 #ifndef CONFIG_IDF_TARGET_ESP32S2
   HasBluetooth = true;
@@ -308,6 +322,10 @@ void display_manager_add_status_bar(const char *CurrentMenuName) {
 #else
   update_status_bar(true, HasBluetooth, sd_card_manager.is_initialized, 100);
 #endif
+  if (!status_timer_initialized) {
+    status_update_timer = lv_timer_create(status_update_cb, 1000, NULL);
+    status_timer_initialized = true;
+  }
 }
 
 void display_manager_init(void) {
@@ -397,13 +415,13 @@ void display_manager_init(void) {
   display_manager_init_success = true;
 
 #ifndef CONFIG_JC3248W535EN_LCD // JC3248W535EN has its own lvgl task
-  xTaskCreate(lvgl_tick_task, "LVGL Tick Task", 4096, NULL,
-              RENDERING_TASK_PRIORITY, NULL);
+xTaskCreate(lvgl_tick_task, "LVGL Tick Task", 4096, NULL,
+            RENDERING_TASK_PRIORITY, &lvgl_task_handle);
 #endif
-  if (xTaskCreate(hardware_input_task, "RawInput", 2048, NULL,
-                  HARDWARE_INPUT_TASK_PRIORITY, NULL) != pdPASS) {
+if (xTaskCreate(hardware_input_task, "RawInput", 2048, NULL,
+                HARDWARE_INPUT_TASK_PRIORITY, &input_task_handle) != pdPASS) {
     printf("Failed to create RawInput task\n");
-  }
+}
 }
 
 bool display_manager_register_view(View *view) {
@@ -485,6 +503,15 @@ void set_backlight_brightness(uint8_t percentage) {
   }
 
   gpio_set_level(CONFIG_LV_DISP_PIN_BCKL, percentage);
+  if (percentage == 0) {
+    if (status_update_timer) lv_timer_pause(status_update_timer);
+    if (lvgl_task_handle) vTaskSuspend(lvgl_task_handle);
+    if (input_task_handle) vTaskSuspend(input_task_handle);
+  } else {
+    if (status_update_timer) lv_timer_resume(status_update_timer);
+    if (lvgl_task_handle) vTaskResume(lvgl_task_handle);
+    if (input_task_handle) vTaskResume(input_task_handle);
+  }
 }
 
 void hardware_input_task(void *pvParameters) {
