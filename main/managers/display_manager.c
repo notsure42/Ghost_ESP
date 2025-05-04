@@ -58,7 +58,7 @@ lv_obj_t *mainlabel = NULL;
 bool display_manager_init_success = false;
 
 #define FADE_DURATION_MS 10
-#define DEFAULT_DISPLAY_TIMEOUT_MS 10000
+#define DEFAULT_DISPLAY_TIMEOUT_MS 30000
 
 uint32_t display_timeout_ms = DEFAULT_DISPLAY_TIMEOUT_MS;
 
