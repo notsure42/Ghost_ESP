@@ -264,6 +264,7 @@ void display_manager_add_status_bar(const char *CurrentMenuName) {
       status_bar, hex_to_lv_color(settings_get_accent_color_str(&G_Settings)),
       LV_PART_MAIN);
   lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_SCROLLABLE);
+  lv_obj_set_style_radius(status_bar, 0, LV_PART_MAIN);
 
   lv_obj_t *left_container = lv_obj_create(status_bar);
   lv_obj_remove_style_all(left_container);
