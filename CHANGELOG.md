@@ -4,6 +4,9 @@
 
 ### Added
 
+- Commands
+  - Added station selection capability to select command
+
 - Display
   - Add back button to options screen bottom center to return to main menu
   - Added swipe handling for the main menu and app gallery views
@@ -17,6 +20,9 @@
   - Offset terminal page vertically by status bar height and adjust its height accordingly.
   - Optimize terminal screen by batching text additions
   - Remove index reset in main_menu_create to maintain selection across view switches.
+
+- Commands
+  - List stations with sanitized ascii and numeric index
   
 ### Bug Fixes
 
