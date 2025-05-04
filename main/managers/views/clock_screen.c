@@ -7,6 +7,7 @@
 
 static lv_obj_t *clock_container;
 static lv_obj_t *time_label;
+static lv_obj_t *date_label;
 static lv_timer_t *clock_timer;
 
 static void digital_clock_cb(lv_timer_t *timer) {
@@ -17,6 +18,9 @@ static void digital_clock_cb(lv_timer_t *timer) {
     char buf[16];
     strftime(buf, sizeof(buf), "%H:%M:%S", &timeinfo);
     lv_label_set_text(time_label, buf);
+    char buf_date[16];
+    strftime(buf_date, sizeof(buf_date), "%A, %b %d", &timeinfo);
+    lv_label_set_text(date_label, buf_date);
 }
 
 static void clock_event_handler(InputEvent *event) {
@@ -47,7 +51,12 @@ void clock_create(void) {
     lv_label_set_text(time_label, "00:00:00");
     lv_obj_set_style_text_font(time_label, &lv_font_montserrat_40, 0);
     lv_obj_set_style_text_color(time_label, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_align(time_label, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_align(time_label, LV_ALIGN_CENTER, 0, -15);
+    date_label = lv_label_create(clock_container);
+    lv_label_set_text(date_label, "Wednesday, Jan 01");
+    lv_obj_set_style_text_font(date_label, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_color(date_label, lv_color_hex(0xAAAAAA), 0);
+    lv_obj_align(date_label, LV_ALIGN_CENTER, 0, 30);
 
     clock_timer = lv_timer_create(digital_clock_cb, 1000, NULL);
     digital_clock_cb(NULL);

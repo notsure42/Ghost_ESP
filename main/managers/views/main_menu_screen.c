@@ -41,7 +41,7 @@ static void init_menu_colors(void) {
     menu_items[1].border_color = lv_color_hex(0xD32F2F);
     menu_items[2].border_color = lv_color_hex(0x388E3C);
     menu_items[3].border_color = lv_color_hex(0x7B1FA2);
-    menu_items[4].border_color = lv_color_hex(0xFFB300);
+    menu_items[4].border_color = lv_color_hex(0xFFFFFF);
 }
 
 // Animation callback wrapper
