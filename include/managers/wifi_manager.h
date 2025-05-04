@@ -126,6 +126,12 @@ void wifi_manager_select_ap(int index);
 // Select a station from the station list based on index
 void wifi_manager_select_station(int index);
 
+// Deauthenticate the selected station or fallback to global deauth if none selected
+void wifi_manager_deauth_station(void);
+
+// Stop station deauth background task and restart AP if running, return true if stopped
+bool wifi_manager_stop_deauth_station(void);
+
 // broadcast ap beacon with optional ssid
 esp_err_t wifi_manager_broadcast_ap(const char *ssid);
 

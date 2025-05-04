@@ -166,18 +166,19 @@ void handle_sta_scan(int argc, char **argv) {
 
 void handle_attack_cmd(int argc, char **argv) {
     if (argc > 1 && strcmp(argv[1], "-d") == 0) {
-        printf("Deauth Attack Starting...\n");
-        TERMINAL_VIEW_ADD_TEXT("Deauth Attack Starting...\n");
-        wifi_manager_start_deauth();
+        printf("Deauthentication starting...\n");
+        TERMINAL_VIEW_ADD_TEXT("Deauthentication starting...\n");
+        wifi_manager_deauth_station();
         return;
     } else {
-        printf("Usage: attack -d (for deauthing access points)\n");
-        TERMINAL_VIEW_ADD_TEXT("Usage: attack -d (for deauthing access points)\n");
+        printf("Usage: attack -d (for deauthing access points or selected station)\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: attack -d (for deauthing access points or selected station)\n");
     }
 }
 
 void handle_stop_deauth(int argc, char **argv) {
     wifi_manager_stop_deauth();
+    wifi_manager_stop_deauth_station();
     printf("Deauthing Stopped....\n");
     TERMINAL_VIEW_ADD_TEXT("Deauthing Stopped....\n");
 }
@@ -243,6 +244,8 @@ void handle_stop_flipper(int argc, char **argv) {
     csv_file_close();                  // Close any open CSV files
     gps_manager_deinit(&g_gpsManager); // Clean up GPS if active
     wifi_manager_stop_monitor_mode();  // Stop any active monitoring
+    wifi_manager_stop_deauth_station();
+    wifi_manager_stop_deauth();
     printf("Stopped activities.\nClosed files.\n");
     TERMINAL_VIEW_ADD_TEXT("Stopped activities.\nClosed files.\n");
 }

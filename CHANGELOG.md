@@ -4,9 +4,12 @@
 
 ### Added
 
+- Attacks
+  - Added support for direct station deauthentication
+
 - Commands
   - Added station selection capability to select command
-
+  
 - Display
   - Add back button to options screen bottom center to return to main menu
   - Added swipe handling for the main menu and app gallery views
