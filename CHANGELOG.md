@@ -26,6 +26,7 @@
 
 - Commands
   - List stations with sanitized ascii and numeric index
+  - Label APs with blank SSID fields as "Hidden"
   
 ### Bug Fixes
 

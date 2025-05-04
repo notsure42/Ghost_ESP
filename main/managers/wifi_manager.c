@@ -81,6 +81,9 @@ static void stop_scansta_channel_hopping(void);
 // Station deauthentication task declaration
 static void wifi_deauth_station_task(void *param);
 
+// Helper function forward declaration
+static void sanitize_ssid_and_check_hidden(const uint8_t* input_ssid, char* output_buffer, size_t buffer_size);
+
 // Globals
 static TaskHandle_t deauth_station_task_handle = NULL;
 
@@ -1221,29 +1224,18 @@ void wifi_manager_list_stations() {
     }
     printf("Listing all stations and their associated APs:\n");
     for (int i = 0; i < station_count; i++) {
-        char ssid_str[33];
-        char sanitized_ssid[33];
+        char sanitized_ssid[33]; // Buffer for sanitized SSID
         bool found = false;
         for (int j = 0; j < ap_count; j++) {
             if (memcmp(scanned_aps[j].bssid, station_ap_list[i].ap_bssid, 6) == 0) {
-                memcpy(ssid_str, scanned_aps[j].ssid, 32);
-                ssid_str[32] = '\0';
-                if (strlen(ssid_str) == 0) {
-                    strcpy(ssid_str, "(Hidden)");
-                }
+                sanitize_ssid_and_check_hidden(scanned_aps[j].ssid, sanitized_ssid, sizeof(sanitized_ssid));
                 found = true;
                 break;
             }
         }
         if (!found) {
-            strcpy(ssid_str, "(Unknown AP)");
-        }
-        int len = strlen(ssid_str);
-        for (int k = 0; k < len; k++) {
-            char c = ssid_str[k];
-            sanitized_ssid[k] = (c >= 32 && c <= 126) ? c : '.';
-        }
-        sanitized_ssid[len] = '\0';
+            strcpy(sanitized_ssid, "(Unknown AP)");
+         }
         printf("[%d] Station MAC: %02X:%02X:%02X:%02X:%02X:%02X, AP SSID: %s, AP BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
                i,
                station_ap_list[i].station_mac[0], station_ap_list[i].station_mac[1], station_ap_list[i].station_mac[2], station_ap_list[i].station_mac[3], station_ap_list[i].station_mac[4], station_ap_list[i].station_mac[5],
@@ -1484,12 +1476,15 @@ void wifi_manager_select_ap(int index) {
 
     selected_ap = scanned_aps[index];
 
+    char sanitized_ssid[33];
+    sanitize_ssid_and_check_hidden(selected_ap.ssid, sanitized_ssid, sizeof(sanitized_ssid));
+
     printf("Selected Access Point: SSID: %s, BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n",
-           selected_ap.ssid, selected_ap.bssid[0], selected_ap.bssid[1], selected_ap.bssid[2],
+           sanitized_ssid, selected_ap.bssid[0], selected_ap.bssid[1], selected_ap.bssid[2],
            selected_ap.bssid[3], selected_ap.bssid[4], selected_ap.bssid[5]);
 
     TERMINAL_VIEW_ADD_TEXT(
-        "Selected Access Point: SSID: %s, BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n", selected_ap.ssid,
+        "Selected Access Point: SSID: %s, BSSID: %02X:%02X:%02X:%02X:%02X:%02X\n", sanitized_ssid,
         selected_ap.bssid[0], selected_ap.bssid[1], selected_ap.bssid[2], selected_ap.bssid[3],
         selected_ap.bssid[4], selected_ap.bssid[5]);
 
@@ -2387,11 +2382,8 @@ void wifi_manager_print_scan_results_with_oui() {
     }
 
     for (uint16_t i = 0; i < ap_count; i++) {
-        char ssid_temp[33];
-        memcpy(ssid_temp, scanned_aps[i].ssid, 32);
-        ssid_temp[32] = '\0';
-
-        const char *ssid_str = (strlen(ssid_temp) > 0) ? ssid_temp : "Hidden Network";
+        char sanitized_ssid[33];
+        sanitize_ssid_and_check_hidden(scanned_aps[i].ssid, sanitized_ssid, sizeof(sanitized_ssid));
 
         ECompany company = match_bssid_to_company(scanned_aps[i].bssid);
         const char *company_str = "Unknown";
@@ -2427,7 +2419,7 @@ void wifi_manager_print_scan_results_with_oui() {
                "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
                "     RSSI: %d,\n"
                "     Company: %s\n",
-               i, ssid_str, 
+               i, sanitized_ssid, 
                scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
                scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
                scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
@@ -2438,7 +2430,7 @@ void wifi_manager_print_scan_results_with_oui() {
                                "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
                                "     RSSI: %d,\n"
                                "     Company: %s\n",
-                               i, ssid_str, 
+                               i, sanitized_ssid, 
                                scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
                                scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
                                scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
@@ -2962,27 +2954,25 @@ void wifi_manager_scanall_chart() {
 
 
     for (uint16_t i = 0; i < ap_count; i++) {
-        char ssid_temp[33];
-        memcpy(ssid_temp, scanned_aps[i].ssid, 32);
-        ssid_temp[32] = '\0';
-        const char *ssid_str = (strlen(ssid_temp) > 0) ? ssid_temp : "(Hidden)";
+        char sanitized_ssid[33];
+        sanitize_ssid_and_check_hidden(scanned_aps[i].ssid, sanitized_ssid, sizeof(sanitized_ssid));
 
         ECompany company = match_bssid_to_company(scanned_aps[i].bssid);
         const char *company_str = "Unknown";
-         switch (company) {
-             case COMPANY_DLINK: company_str = "DLink"; break;
-             case COMPANY_NETGEAR: company_str = "Netgear"; break;
-             case COMPANY_BELKIN: company_str = "Belkin"; break;
-             case COMPANY_TPLINK: company_str = "TPLink"; break;
-             case COMPANY_LINKSYS: company_str = "Linksys"; break;
-             case COMPANY_ASUS: company_str = "ASUS"; break;
-             case COMPANY_ACTIONTEC: company_str = "Actiontec"; break;
-             default: company_str = "Unknown"; break;
+        switch (company) {
+        case COMPANY_DLINK: company_str = "DLink"; break;
+        case COMPANY_NETGEAR: company_str = "Netgear"; break;
+        case COMPANY_BELKIN: company_str = "Belkin"; break;
+        case COMPANY_TPLINK: company_str = "TPLink"; break;
+        case COMPANY_LINKSYS: company_str = "Linksys"; break;
+        case COMPANY_ASUS: company_str = "ASUS"; break;
+        case COMPANY_ACTIONTEC: company_str = "Actiontec"; break;
+        default: company_str = "Unknown"; break;
         }
 
         // Print AP details line
         char ap_details_line[200];
-        snprintf(ap_details_line, sizeof(ap_details_line), ap_format, ssid_str,
+        snprintf(ap_details_line, sizeof(ap_details_line), ap_format, sanitized_ssid,
                  scanned_aps[i].bssid[0], scanned_aps[i].bssid[1], scanned_aps[i].bssid[2],
                  scanned_aps[i].bssid[3], scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
                  scanned_aps[i].primary, company_str);
@@ -3028,4 +3018,23 @@ bool wifi_manager_stop_deauth_station(void) {
         return true;
     }
     return false;
+}
+
+// Helper function to sanitize SSID and handle hidden networks
+static void sanitize_ssid_and_check_hidden(const uint8_t* input_ssid, char* output_buffer, size_t buffer_size) {
+    char temp_ssid[33];
+    memcpy(temp_ssid, input_ssid, 32);
+    temp_ssid[32] = '\0';
+
+    if (strlen(temp_ssid) == 0) {
+        snprintf(output_buffer, buffer_size, "(Hidden)");
+    } else {
+        int len = strlen(temp_ssid);
+        int out_idx = 0;
+        for (int k = 0; k < len && out_idx < buffer_size - 1; k++) {
+            char c = temp_ssid[k];
+            output_buffer[out_idx++] = (c >= 32 && c <= 126) ? c : '.';
+        }
+        output_buffer[out_idx] = '\0';
+    }
 }
