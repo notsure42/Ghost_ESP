@@ -10,6 +10,7 @@
 #define BEACON_INTERVAL 0x0064 // 100 Time Units (TU)
 #define CAPABILITY_INFO 0x0411 // Capability information (ESS)
 #define MAX_STATIONS 50
+#define BEACON_LIST_MAX 16
 
 typedef struct {
   uint8_t station_mac[6]; // MAC address of the station (client)
@@ -259,5 +260,12 @@ static const uint16_t COMMON_PORTS[] = {
 void wifi_manager_start_scan_with_time(int seconds);
 
 void wifi_manager_scanall_chart(void);
+
+// Functions to manage a custom beacon SSID list
+void wifi_manager_add_beacon_ssid(const char *ssid);
+void wifi_manager_remove_beacon_ssid(const char *ssid);
+void wifi_manager_clear_beacon_list(void);
+void wifi_manager_show_beacon_list(void);
+void wifi_manager_start_beacon_list(void);
 
 #endif // WIFI_MANAGER_H

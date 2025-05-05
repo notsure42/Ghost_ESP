@@ -47,6 +47,14 @@
 #define ARP_DELAY_MS 500
 #define MAX_PACKETS_PER_SECOND 200
 
+#define BEACON_LIST_MAX 16
+#define BEACON_SSID_MAX_LEN 32
+
+static char g_beacon_list[BEACON_LIST_MAX][BEACON_SSID_MAX_LEN+1];
+static int g_beacon_list_count = 0;
+
+static void wifi_beacon_list_task(void *param);
+
 uint16_t ap_count;
 wifi_ap_record_t *scanned_aps;
 const char *TAG = "WiFiManager";
@@ -3063,4 +3071,82 @@ static void sanitize_ssid_and_check_hidden(const uint8_t* input_ssid, char* outp
         }
         output_buffer[out_idx] = '\0';
     }
+}
+
+// Add an SSID to the beacon list
+void wifi_manager_add_beacon_ssid(const char *ssid) {
+    if (g_beacon_list_count >= BEACON_LIST_MAX) {
+        printf("Beacon list full\n");
+        return;
+    }
+    if (strlen(ssid) > BEACON_SSID_MAX_LEN) {
+        printf("SSID too long\n");
+        return;
+    }
+    for (int i = 0; i < g_beacon_list_count; ++i) {
+        if (strcmp(g_beacon_list[i], ssid) == 0) {
+            printf("SSID already in list: %s\n", ssid);
+            return;
+        }
+    }
+    strcpy(g_beacon_list[g_beacon_list_count++], ssid);
+    printf("Added SSID to beacon list: %s\n", ssid);
+}
+
+// Remove an SSID from the beacon list
+void wifi_manager_remove_beacon_ssid(const char *ssid) {
+    for (int i = 0; i < g_beacon_list_count; ++i) {
+        if (strcmp(g_beacon_list[i], ssid) == 0) {
+            for (int j = i; j < g_beacon_list_count - 1; ++j) {
+                strcpy(g_beacon_list[j], g_beacon_list[j + 1]);
+            }
+            --g_beacon_list_count;
+            printf("Removed SSID from beacon list: %s\n", ssid);
+            return;
+        }
+    }
+    printf("SSID not found in list: %s\n", ssid);
+}
+
+// Clear the beacon list
+void wifi_manager_clear_beacon_list(void) {
+    g_beacon_list_count = 0;
+    printf("Cleared beacon list\n");
+}
+
+// Show the beacon list
+void wifi_manager_show_beacon_list(void) {
+    printf("Beacon list (%d entries):\n", g_beacon_list_count);
+    for (int i = 0; i < g_beacon_list_count; ++i) {
+        printf("  %d: %s\n", i, g_beacon_list[i]);
+    }
+}
+
+// Start beacon spam using the saved list
+void wifi_manager_start_beacon_list(void) {
+    if (g_beacon_list_count == 0) {
+        printf("No SSIDs in beacon list\n");
+        return;
+    }
+    // Ensure any existing beacon spam is stopped
+    wifi_manager_stop_beacon();
+    // Notify user that list-based beacon spam is starting
+    printf("Starting beacon spam list (%d SSIDs)...\n", g_beacon_list_count);
+    TERMINAL_VIEW_ADD_TEXT("Starting beacon spam list (%d SSIDs)...\n", g_beacon_list_count);
+    // Launch the beacon list task
+    xTaskCreate(wifi_beacon_list_task, "beacon_list", 2048, NULL, 5, &beacon_task_handle);
+    beacon_task_running = 1;
+    rgb_manager_set_color(&rgb_manager, 0, 255, 0, 0, false);
+}
+
+// Task for cycling through beacon list
+static void wifi_beacon_list_task(void *param) {
+    (void)param;
+    while (beacon_task_handle) {
+        for (int i = 0; i < g_beacon_list_count; ++i) {
+            wifi_manager_broadcast_ap(g_beacon_list[i]);
+            vTaskDelay(pdMS_TO_TICKS(settings_get_broadcast_speed(&G_Settings)));
+        }
+    }
+    vTaskDelete(NULL);
 }

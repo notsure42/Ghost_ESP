@@ -1206,6 +1206,41 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("timezone\n");
     TERMINAL_VIEW_ADD_TEXT("    Description: Set the display timezone for the clock view.\n");
     TERMINAL_VIEW_ADD_TEXT("    Usage: timezone <TZ_STRING>\n\n");
+
+    printf("beaconadd\n");
+    printf("    Description: Add an SSID to the beacon spam list.\n");
+    printf("    Usage: beaconadd <SSID>\n\n");
+    TERMINAL_VIEW_ADD_TEXT("beaconadd\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Add an SSID to the beacon spam list.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: beaconadd <SSID>\n\n");
+
+    printf("beaconremove\n");
+    printf("    Description: Remove an SSID from the beacon spam list.\n");
+    printf("    Usage: beaconremove <SSID>\n\n");
+    TERMINAL_VIEW_ADD_TEXT("beaconremove\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Remove an SSID from the beacon spam list.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: beaconremove <SSID>\n\n");
+
+    printf("beaconclear\n");
+    printf("    Description: Clear the beacon spam list.\n");
+    printf("    Usage: beaconclear\n\n");
+    TERMINAL_VIEW_ADD_TEXT("beaconclear\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Clear the beacon spam list.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: beaconclear\n\n");
+
+    printf("beaconshow\n");
+    printf("    Description: Show the current beacon spam list.\n");
+    printf("    Usage: beaconshow\n\n");
+    TERMINAL_VIEW_ADD_TEXT("beaconshow\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Show the current beacon spam list.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: beaconshow\n\n");
+
+    printf("beaconspamlist\n");
+    printf("    Description: Start beacon spamming using the beacon spam list.\n");
+    printf("    Usage: beaconspamlist\n\n");
+    TERMINAL_VIEW_ADD_TEXT("beaconspamlist\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: Start beacon spamming using the beacon spam list.\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: beaconspamlist\n\n");
 }
 
 void handle_capture(int argc, char **argv) {
@@ -1500,7 +1535,7 @@ void handle_setrgb(int argc, char **argv) {
     if (red_pin == green_pin && green_pin == blue_pin) {
         rgb_manager_deinit(&rgb_manager);
         ret = rgb_manager_init(&rgb_manager, red_pin, 1, LED_PIXEL_FORMAT_GRB, LED_MODEL_WS2812,
-                               GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC);
+                                GPIO_NUM_NC, GPIO_NUM_NC, GPIO_NUM_NC);
         if (ret == ESP_OK) {
             settings_set_rgb_data_pin(&G_Settings, red_pin);
             settings_set_rgb_separate_pins(&G_Settings, -1, -1, -1);
@@ -1762,6 +1797,38 @@ void handle_select_flipper_cmd(int argc, char **argv) {
 }
 #endif
 
+// New beacon list command handlers
+void handle_beaconadd(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: beaconadd <SSID>\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: beaconadd <SSID>\n");
+        return;
+    }
+    wifi_manager_add_beacon_ssid(argv[1]);
+}
+
+void handle_beaconremove(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: beaconremove <SSID>\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: beaconremove <SSID>\n");
+        return;
+    }
+    wifi_manager_remove_beacon_ssid(argv[1]);
+}
+
+void handle_beaconclear(int argc, char **argv) {
+    wifi_manager_clear_beacon_list();
+}
+
+void handle_beaconshow(int argc, char **argv) {
+    wifi_manager_show_beacon_list();
+}
+
+void handle_beaconspamlist(int argc, char **argv) {
+    wifi_manager_start_beacon_list();
+}
+
+
 void register_commands() {
     register_command("help", handle_help);
     register_command("scanap", cmd_wifi_scan_start);
@@ -1771,6 +1838,12 @@ void register_commands() {
     register_command("attack", handle_attack_cmd);
     register_command("list", handle_list);
     register_command("beaconspam", handle_beaconspam);
+    // Register new beacon list commands
+    register_command("beaconadd", handle_beaconadd);
+    register_command("beaconremove", handle_beaconremove);
+    register_command("beaconclear", handle_beaconclear);
+    register_command("beaconshow", handle_beaconshow);
+    register_command("beaconspamlist", handle_beaconspamlist);
     register_command("stopspam", handle_stop_spam);
     register_command("stopdeauth", handle_stop_deauth);
     register_command("select", handle_select_cmd);
@@ -1815,4 +1888,3 @@ void register_commands() {
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }
-
