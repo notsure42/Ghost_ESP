@@ -165,14 +165,13 @@ jobs:
         run: |
           echo "Creating pre-release with tag $TAG and title '$TITLE'"
           cat > release_notes.md <<'EOF'
-          Automated pre-release build.
+          Automated pre-release build for tag $TAG.
 
-          See https://github.com/jaylikesbunda/Ghost_ESP/blob/Development-deki/CHANGELOG.md for details
+          See https://github.com/$GITHUB_REPOSITORY/releases/tag/$TAG for details
 
           You can flash the bins with https://espressoflash.com/
 
           EOF
-          cat CHANGELOG.md >> release_notes.md
           # Check if there are assets to upload
           if [ -z "$(ls -A release_assets/*.zip 2>/dev/null)" ]; then
              echo "No ZIP files found in release_assets. Creating pre-release without assets."
