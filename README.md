@@ -1,7 +1,7 @@
 # Ghost ESP: Revival
 
 
-> **Note:** Spooky's GhostESP has been archived and not in development anymore.
+> **Note:** this is a fork of [Spooky's GhostESP](https://github.com/Spooks4576/Ghost_ESP) which has been archived and not in development anymore.
 
 
 
