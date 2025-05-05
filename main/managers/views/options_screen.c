@@ -95,11 +95,10 @@ static const char *wifi_options[] = {"Scan Access Points",
                                      "Go Back",
                                      NULL};
 
-static const char *bluetooth_options[] = {"Find Flippers",   "Start AirTag Scanner",
-                                          "List AirTags",    "Select AirTag",
-                                          "Spoof Selected AirTag", "Stop Spoofing",
-                                          "Raw BLE Scanner", "BLE Skimmer Detect",
-                                          "Go Back",         NULL};
+static const char *bluetooth_options[] = {"Find Flippers", "List Flippers", "Select Flipper", "Start AirTag Scanner",
+                                         "List AirTags", "Select AirTag", "Spoof Selected AirTag", "Stop Spoofing",
+                                         "Raw BLE Scanner", "BLE Skimmer Detect",
+                                         "Go Back", NULL};
 
 static const char *gps_options[] = {"Start Wardriving", "Stop Wardriving", "GPS Info",
                                     "BLE Wardriving",   "Go Back",         NULL};
@@ -544,31 +543,45 @@ void option_event_cb(lv_event_t *e) {
         error_popup_create("Device Does not Support Bluetooth...");
         
 #endif
-    }
+    } else if (strcmp(Selected_Option, "List Flippers") == 0) {
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("listflippers");
+        view_switched = true;
+#else
+        error_popup_create("Device Does not Support Bluetooth...");
+        
+#endif
+    } else if (strcmp(Selected_Option, "Select Flipper") == 0) {
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+         set_number_pad_mode(NP_MODE_FLIPPER);
+         display_manager_switch_view(&number_pad_view);
+         view_switched = true;
+#else
+        error_popup_create("Device Does not Support Bluetooth...");
 
-    else if (strcmp(Selected_Option, "List AirTags") == 0) {
+#endif
+    } else if (strcmp(Selected_Option, "List AirTags") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
         simulateCommand("listairtags");
         view_switched = true;
 #else
         error_popup_create("Device Does not Support Bluetooth...");
-        
-#endif
-    }
 
-    else if (strcmp(Selected_Option, "Select AirTag") == 0) {
+#endif
+    } else if (strcmp(Selected_Option, "Select AirTag") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         set_number_pad_mode(NP_MODE_AIRTAG);
         display_manager_switch_view(&number_pad_view);
         view_switched = true;
 #else
         error_popup_create("Device Does not Support Bluetooth...");
-        
+
 #endif
     }
 
-    else if (strcmp(Selected_Option, "Spoof Selected AirTag") == 0) {
+     else if (strcmp(Selected_Option, "Spoof Selected AirTag") == 0) {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
         display_manager_switch_view(&terminal_view);
         simulateCommand("spoofairtag");

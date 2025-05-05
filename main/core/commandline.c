@@ -1698,6 +1698,70 @@ void handle_scanall(int argc, char **argv) {
     ap_manager_start_services(); // Restore AP for WebUI
 }
 
+// Helper function to simplify calling list airtags
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_list_airtags_cmd(int argc, char **argv) {
+    ble_list_airtags();
+}
+#endif
+
+// Select AirTag handler
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_select_airtag(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: selectairtag <number>\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: selectairtag <number>\n");
+        return;
+    }
+
+    char *endptr;
+    int num = (int)strtol(argv[1], &endptr, 10);
+    if (*endptr == '\0') {
+        ble_select_airtag(num);
+    } else {
+        printf("Error: '%s' is not a valid number.\n", argv[1]);
+        TERMINAL_VIEW_ADD_TEXT("Error: '%s' is not a valid number.\n", argv[1]);
+    }
+}
+#endif
+
+// Spoof AirTag handler
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_spoof_airtag(int argc, char **argv) {
+    ble_start_spoofing_selected_airtag();
+}
+#endif
+
+// Stop Spoof handler
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_stop_spoof(int argc, char **argv) {
+    ble_stop_spoofing();
+}
+#endif
+
+// Handlers for Flipper commands
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_list_flippers_cmd(int argc, char **argv) {
+    ble_list_flippers();
+}
+
+void handle_select_flipper_cmd(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: selectflipper <index>\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: selectflipper <index>\n");
+        return;
+    }
+    char *endptr;
+    int num = (int)strtol(argv[1], &endptr, 10);
+    if (*endptr == '\0') {
+        ble_select_flipper(num);
+    } else {
+        printf("Error: '%s' is not a valid number.\n", argv[1]);
+        TERMINAL_VIEW_ADD_TEXT("Error: '%s' is not a valid number.\n", argv[1]);
+    }
+}
+#endif
+
 void register_commands() {
     register_command("help", handle_help);
     register_command("scanap", cmd_wifi_scan_start);
@@ -1746,47 +1810,9 @@ void register_commands() {
     register_command("sd_save_config", handle_sd_save_config);
     register_command("scanall", handle_scanall);
     register_command("timezone", handle_timezone_cmd);
+    register_command("listflippers", handle_list_flippers_cmd);
+    register_command("selectflipper", handle_select_flipper_cmd);
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }
 
-// Helper function to simplify calling list airtags
-#ifndef CONFIG_IDF_TARGET_ESP32S2
-void handle_list_airtags_cmd(int argc, char **argv) {
-    ble_list_airtags();
-}
-#endif
-
-// Select AirTag handler
-#ifndef CONFIG_IDF_TARGET_ESP32S2
-void handle_select_airtag(int argc, char **argv) {
-    if (argc != 2) {
-        printf("Usage: selectairtag <number>\n");
-        TERMINAL_VIEW_ADD_TEXT("Usage: selectairtag <number>\n");
-        return;
-    }
-
-    char *endptr;
-    int num = (int)strtol(argv[1], &endptr, 10);
-    if (*endptr == '\0') {
-        ble_select_airtag(num);
-    } else {
-        printf("Error: '%s' is not a valid number.\n", argv[1]);
-        TERMINAL_VIEW_ADD_TEXT("Error: '%s' is not a valid number.\n", argv[1]);
-    }
-}
-#endif
-
-// Spoof AirTag handler
-#ifndef CONFIG_IDF_TARGET_ESP32S2
-void handle_spoof_airtag(int argc, char **argv) {
-    ble_start_spoofing_selected_airtag();
-}
-#endif
-
-// Stop Spoof handler
-#ifndef CONFIG_IDF_TARGET_ESP32S2
-void handle_stop_spoof(int argc, char **argv) {
-    ble_stop_spoofing();
-}
-#endif

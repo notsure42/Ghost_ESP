@@ -9,7 +9,8 @@ typedef enum {
     NP_MODE_AP,
     NP_MODE_STA,
     NP_MODE_LAN,
-    NP_MODE_AIRTAG
+    NP_MODE_AIRTAG,
+    NP_MODE_FLIPPER
 } ENumberPadMode;
 
 extern View number_pad_view;

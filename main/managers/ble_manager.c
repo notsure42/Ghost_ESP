@@ -23,6 +23,17 @@
 #define MAX_HANDLERS 10
 #define MAX_PACKET_SIZE 31
 
+// Flipper tracking definitions
+#define MAX_FLIPPERS 50
+typedef struct {
+    ble_addr_t addr;
+    char name[32];
+    int8_t rssi;
+} FlipperDevice;
+static FlipperDevice discovered_flippers[MAX_FLIPPERS];
+static int discovered_flipper_count = 0;
+static int selected_flipper_index = -1; // Index of the Flipper selected for tracking
+
 static const char *TAG_BLE = "BLE_MANAGER";
 static int airTagCount = 0;
 static bool ble_initialized = false;
@@ -248,90 +259,72 @@ void ble_findtheflippers_callback(struct ble_gap_event *event, size_t len) {
     ble_service_uuids_t uuids = {0};
     parse_service_uuids(event->disc.data, event->disc.length_data, &uuids);
 
+    // Determine Flipper type
+    const char *type_str = NULL;
     for (int i = 0; i < uuids.uuid16_count; i++) {
-        if (uuids.uuid16[i] == 0x3082) {
-            printf("Found White Flipper Device: \nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found White Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
-        }
-        if (uuids.uuid16[i] == 0x3081) {
-            printf("Found Black Flipper Device: \nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found Black Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
-        }
-        if (uuids.uuid16[i] == 0x3083) {
-            printf("Found Transparent Flipper Device: \nMAC: %s, \nName: %s, \nRSSI: "
-                   "%d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found Transparent Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
+        if (uuids.uuid16[i] == 0x3082) { type_str = "White"; break; }
+        if (uuids.uuid16[i] == 0x3081) { type_str = "Black"; break; }
+        if (uuids.uuid16[i] == 0x3083) { type_str = "Transparent"; break; }
+    }
+    if (!type_str) {
+        for (int i = 0; i < uuids.uuid32_count; i++) {
+            if (uuids.uuid32[i] == 0x3082) { type_str = "White"; break; }
+            if (uuids.uuid32[i] == 0x3081) { type_str = "Black"; break; }
+            if (uuids.uuid32[i] == 0x3083) { type_str = "Transparent"; break; }
         }
     }
-    for (int i = 0; i < uuids.uuid32_count; i++) {
-        if (uuids.uuid32[i] == 0x3082) {
-            printf("Found White Flipper Device (32-bit UUID): \nMAC: %s, \nName: %s, "
-                   "\nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found White Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
-        }
-        if (uuids.uuid32[i] == 0x3081) {
-            printf("Found Black Flipper Device (32-bit UUID): \nMAC: %s, \nName: %s, "
-                   "\nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found Black Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
-        }
-        if (uuids.uuid32[i] == 0x3083) {
-            printf("Found Transparent Flipper Device (32-bit UUID): \nMAC: %s, "
-                   "\nName: %s, \nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found Transparent Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
+    if (!type_str) {
+        for (int i = 0; i < uuids.uuid128_count; i++) {
+            if (strstr(uuids.uuid128[i], "3082")) { type_str = "White"; break; }
+            if (strstr(uuids.uuid128[i], "3081")) { type_str = "Black"; break; }
+            if (strstr(uuids.uuid128[i], "3083")) { type_str = "Transparent"; break; }
         }
     }
-    for (int i = 0; i < uuids.uuid128_count; i++) {
-        if (strstr(uuids.uuid128[i], "3082") != NULL) {
-            printf("Found White Flipper Device (128-bit UUID): \nMAC: %s, \nName: "
-                   "%s, \nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found White Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
+    if (!type_str) { return; }
+    // Store or update Flipper device
+    bool already = false;
+    for (int j = 0; j < discovered_flipper_count; j++) {
+        if (memcmp(discovered_flippers[j].addr.val, event->disc.addr.val, 6) == 0) {
+            already = true;
+            discovered_flippers[j].rssi = advertisementRssi;
+            // Check if this is the selected Flipper for tracking
+            if (j == selected_flipper_index) {
+                const char *proximity;
+                if (advertisementRssi >= -40) {
+                    proximity = "Immediate";
+                } else if (advertisementRssi >= -50) {
+                    proximity = "Very Close";
+                } else if (advertisementRssi >= -60) {
+                    proximity = "Close";
+                } else if (advertisementRssi >= -70) {
+                    proximity = "Moderate";
+                } else if (advertisementRssi >= -80) {
+                    proximity = "Far";
+                } else if (advertisementRssi >= -90) {
+                    proximity = "Very Far";
+                } else {
+                    proximity = "Out of Range";
+                }
+                printf("Tracking Flipper %d: RSSI %d dBm (%s)\n", selected_flipper_index, advertisementRssi, proximity);
+                TERMINAL_VIEW_ADD_TEXT("Track [%d]: RSSI %d (%s)\n", selected_flipper_index, advertisementRssi, proximity);
+            }
+            break;
         }
-        if (strstr(uuids.uuid128[i], "3081") != NULL) {
-            printf("Found Black Flipper Device (128-bit UUID): \nMAC: %s, \nName: "
-                   "%s, \nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found Black Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
-        }
-        if (strstr(uuids.uuid128[i], "3083") != NULL) {
-            printf("Found Transparent Flipper Device (128-bit UUID): \nMAC: %s, "
-                   "\nName: %s, \nRSSI: %d\n",
-                   advertisementMac, advertisementName, advertisementRssi);
-            TERMINAL_VIEW_ADD_TEXT("Found Transparent Flipper Device (128-bit UUID): "
-                                   "\nMAC: %s, \nName: %s, \nRSSI: %d\n",
-                                   advertisementMac, advertisementName, advertisementRssi);
-            pulse_once(&rgb_manager, 255, 165, 0);
-        }
+    }
+    if (!already && discovered_flipper_count < MAX_FLIPPERS) {
+        discovered_flippers[discovered_flipper_count].addr = event->disc.addr;
+        strncpy(discovered_flippers[discovered_flipper_count].name, advertisementName,
+                sizeof(discovered_flippers[discovered_flipper_count].name)-1);
+        discovered_flippers[discovered_flipper_count].rssi = advertisementRssi;
+        // Summary log
+        printf("Found %s Flipper (Index: %d): MAC %s, Name %s, RSSI %d\n",
+               type_str, discovered_flipper_count,
+               advertisementMac, advertisementName, advertisementRssi);
+        TERMINAL_VIEW_ADD_TEXT("Found %s Flipper (Idx %d): MAC %s, RSSI %d\n",
+                               type_str, discovered_flipper_count,
+                               advertisementMac, advertisementRssi);
+        pulse_once(&rgb_manager, 0, 255, 0);
+        discovered_flipper_count++;
     }
 }
 
@@ -1049,5 +1042,69 @@ void ble_start_skimmer_detection(void) {
     // Start BLE scanning
     ble_start_scanning();
 }
+
+// Function to list discovered Flippers
+void ble_list_flippers(void) {
+    printf("--- Discovered Flippers (%d) ---\n", discovered_flipper_count);
+    TERMINAL_VIEW_ADD_TEXT("--- Discovered Flippers (%d) ---\n", discovered_flipper_count);
+    if (discovered_flipper_count == 0) {
+        printf("No Flippers discovered yet.\n");
+        TERMINAL_VIEW_ADD_TEXT("No Flippers discovered yet.\n");
+        return;
+    }
+    for (int i = 0; i < discovered_flipper_count; i++) {
+        char mac[18];
+        snprintf(mac, sizeof(mac), "%02x:%02x:%02x:%02x:%02x:%02x",
+                 discovered_flippers[i].addr.val[0], discovered_flippers[i].addr.val[1],
+                 discovered_flippers[i].addr.val[2], discovered_flippers[i].addr.val[3],
+                 discovered_flippers[i].addr.val[4], discovered_flippers[i].addr.val[5]);
+        printf("Index: %d | MAC: %s | RSSI: %d dBm%s\n",
+               i, mac, discovered_flippers[i].rssi,
+               (i == selected_flipper_index) ? " (Selected)" : "");
+        TERMINAL_VIEW_ADD_TEXT("Idx: %d MAC: %s RSSI: %d %s\n",
+                               i, mac, discovered_flippers[i].rssi,
+                               (i == selected_flipper_index) ? "(Sel)" : "");
+    }
+}
+void ble_start_tracking_selected_flipper(void) {
+    // Stop any ongoing scan
+    ble_gap_disc_cancel();
+    // Re-register callback (ensuring no duplicates)
+    ble_unregister_handler(ble_findtheflippers_callback);
+    ble_register_handler(ble_findtheflippers_callback);
+    struct ble_gap_disc_params params = {0};
+    params.itvl = BLE_HCI_SCAN_ITVL_DEF;
+    params.window = BLE_HCI_SCAN_WINDOW_DEF;
+    params.filter_duplicates = 0; // receive all advertisement updates
+    int rc = ble_gap_disc(BLE_OWN_ADDR_PUBLIC, BLE_HS_FOREVER, &params, ble_gap_event_general, NULL);
+    if (rc != 0) {
+        ESP_LOGE(TAG_BLE, "Error starting tracking scan; rc=%d", rc);
+        TERMINAL_VIEW_ADD_TEXT("Error starting tracker; rc=%d\n", rc);
+    }
+}
+
+// Function to select a Flipper by index
+void ble_select_flipper(int index) {
+    if (index < 0 || index >= discovered_flipper_count) {
+        printf("Error: Invalid Flipper index %d. Use 'listflippers' to see valid indices.\n", index);
+        TERMINAL_VIEW_ADD_TEXT("Error: Invalid Flipper index %d.\nUse 'listflippers'.\n", index);
+        selected_flipper_index = -1;
+        return;
+    }
+
+    selected_flipper_index = index;
+    char mac[18];
+    snprintf(mac, sizeof(mac), "%02x:%02x:%02x:%02x:%02x:%02x",
+             discovered_flippers[index].addr.val[0], discovered_flippers[index].addr.val[1],
+             discovered_flippers[index].addr.val[2], discovered_flippers[index].addr.val[3],
+             discovered_flippers[index].addr.val[4], discovered_flippers[index].addr.val[5]);
+    printf("Selected Flipper at index %d: MAC %s\n", index, mac);
+    TERMINAL_VIEW_ADD_TEXT("Selected Flipper %d: MAC %s\n", index, mac);
+    // Start continuous tracking scan without duplicate filtering
+    ble_start_tracking_selected_flipper();
+    printf("Started tracking Flipper %d...\n", index);
+    TERMINAL_VIEW_ADD_TEXT("Track start: Flipper %d\n", index);
+}
+
 
 #endif

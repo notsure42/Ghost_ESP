@@ -43,6 +43,10 @@ void ble_start_scanning(void);
 void ble_start_skimmer_detection(void);
 void ble_stop_skimmer_detection(void);
 
+// Flipper specific functions
+void ble_list_flippers(void);
+void ble_select_flipper(int index);
+
 // AirTag specific functions
 void ble_list_airtags(void);
 void ble_select_airtag(int index);
