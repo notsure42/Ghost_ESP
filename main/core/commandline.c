@@ -126,10 +126,14 @@ void handle_list(int argc, char **argv) {
         printf("Listed Stations...\n");
         TERMINAL_VIEW_ADD_TEXT("Listed Stations...\n");
         return;
-    } else if (argc > 1 && strcmp(argv[1], "-airtags") == 0) {
+    }
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+    else if (argc > 1 && strcmp(argv[1], "-airtags") == 0) {
         ble_list_airtags();
         return;
-    } else {
+    }
+#endif
+    else {
         printf("Usage: list -a (for Wi-Fi scan results)\n");
         TERMINAL_VIEW_ADD_TEXT("Usage: list -a (for Wi-Fi scan results)\n");
     }
@@ -220,6 +224,7 @@ void handle_select_cmd(int argc, char **argv) {
             printf("Error: is not a valid number.\n");
             TERMINAL_VIEW_ADD_TEXT("Error: is not a valid number.\n");
         }
+#ifndef CONFIG_IDF_TARGET_ESP32S2
     } else if (strcmp(argv[1], "-airtag") == 0) {
         char *endptr;
         int num = (int)strtol(argv[2], &endptr, 10);
@@ -229,6 +234,7 @@ void handle_select_cmd(int argc, char **argv) {
             printf("Error: '%s' is not a valid number.\n", argv[2]);
             TERMINAL_VIEW_ADD_TEXT("Error: '%s' is not a valid number.\n", argv[2]);
         }
+#endif
     } else {
         printf("Invalid option. Usage: select -a <number> or select -s <number>\n");
         TERMINAL_VIEW_ADD_TEXT("Invalid option. Usage: select -a <number> or select -s <number>\n");
@@ -1883,8 +1889,10 @@ void register_commands() {
     register_command("sd_save_config", handle_sd_save_config);
     register_command("scanall", handle_scanall);
     register_command("timezone", handle_timezone_cmd);
+#ifndef CONFIG_IDF_TARGET_ESP32S2
     register_command("listflippers", handle_list_flippers_cmd);
     register_command("selectflipper", handle_select_flipper_cmd);
+#endif
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }
