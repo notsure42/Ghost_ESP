@@ -284,20 +284,28 @@ esp_err_t send_command(const char *command, const char *video_id,
   };
   esp_http_client_handle_t client = esp_http_client_init(&config);
 
-  // Set the full URL with parameters
-  char full_url[1524];
-  snprintf(full_url, sizeof(full_url), "%s?%s", config.url, url_params);
+  // Set the request body
+  esp_http_client_set_post_field(client, body_params, strlen(body_params));
+
+  // Dynamically allocate buffer for full_url
+  size_t full_url_len = strlen(config.url) + 1 + strlen(url_params) + 1; // base + '?' + params + '\0'
+  char *full_url = malloc(full_url_len);
+  if (full_url == NULL) {
+    ESP_LOGE(TAG, "Failed to allocate memory for full_url");
+    esp_http_client_cleanup(client);
+    return ESP_FAIL;
+  }
+  snprintf(full_url, full_url_len, "%s?%s", config.url, url_params);
   esp_http_client_set_url(client, full_url);
 
   ESP_LOGI(TAG, "Full URL: %s", full_url);
+  ESP_LOGI(TAG, "POST Body: %s", body_params);
 
   // Set HTTP method, headers, and post data
   esp_http_client_set_method(client, HTTP_METHOD_POST);
   esp_http_client_set_header(client, "Content-Type",
                              "application/x-www-form-urlencoded");
   esp_http_client_set_header(client, "Origin", "https://www.youtube.com");
-
-  esp_http_client_set_post_field(client, body_params, strlen(body_params));
 
   // Perform the HTTP request
   esp_err_t err = esp_http_client_perform(client);
@@ -321,6 +329,7 @@ cleanup:
     free(resp_buf.buffer);
   }
   esp_http_client_cleanup(client);
+  free(full_url); // Free allocated memory
 
   return ESP_OK;
 }
