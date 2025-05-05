@@ -32,6 +32,7 @@
   - Default display timeout is now 30 seconds instead of 10
   - Status bar now updates every second instead of when views change
   - Removed rounding on the status bar
+  - Changed bootup icon
 
 - Commands
   - List stations with sanitized ascii and numeric index
@@ -52,7 +53,7 @@
   - Fixed screen timeout only resetting on the first wake-up tap
   - Add tap to wake functionality to non battery config models
   - Keep app gallery back button on top of icons
-  
+
 - Power
   - Fixed an issue where the device was reporting that it was not charging when it was.
 
