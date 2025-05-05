@@ -68,6 +68,7 @@ static uint32_t deauth_packets_sent = 0;
 static bool login_done = false;
 static char current_creds_filename[128] = "";
 static char current_keystrokes_filename[128] = "";
+static int ap_connection_count = 0;
 
 // Station Scan Channel Hopping Globals
 static esp_timer_handle_t scansta_channel_hop_timer = NULL;
@@ -163,11 +164,15 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
             printf("AP stopped\n");
             break;
         case WIFI_EVENT_AP_STACONNECTED:
+            ap_connection_count++;
             printf("Station connected to AP\n");
+            esp_wifi_set_ps(WIFI_PS_NONE);
             break;
         case WIFI_EVENT_AP_STADISCONNECTED:
+            if (ap_connection_count > 0) ap_connection_count--;
             printf("Station disconnected from AP\n");
             login_done = false;
+            if (ap_connection_count == 0) esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
             break;
         case WIFI_EVENT_STA_START:
             printf("STA started\n");
@@ -1070,7 +1075,7 @@ void wifi_manager_init(void) {
 
     esp_log_level_set("wifi", ESP_LOG_ERROR); // Only show errors, not warnings
 
-    esp_wifi_set_ps(WIFI_PS_NONE);
+    esp_wifi_set_ps(WIFI_PS_MIN_MODEM);
 
     esp_err_t ret = nvs_flash_init();
     if (ret == ESP_ERR_NVS_NO_FREE_PAGES || ret == ESP_ERR_NVS_NEW_VERSION_FOUND) {
