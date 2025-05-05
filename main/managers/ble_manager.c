@@ -32,6 +32,20 @@ typedef struct {
     ble_data_handler_t handler;
 } ble_handler_t;
 
+// Structure to store discovered AirTag information
+typedef struct {
+    ble_addr_t addr;
+    uint8_t payload[BLE_HS_ADV_MAX_SZ]; // Store the full payload
+    size_t payload_len;
+    int8_t rssi;
+    bool selected_for_spoofing;
+} AirTagDevice;
+
+#define MAX_AIRTAGS 50 // Maximum number of AirTags to store
+static AirTagDevice discovered_airtags[MAX_AIRTAGS];
+static int discovered_airtag_count = 0;
+static int selected_airtag_index = -1; // Index of the AirTag selected for spoofing
+
 static ble_handler_t *handlers = NULL;
 static int handler_count = 0;
 static int spam_counter = 0;
@@ -398,42 +412,281 @@ void airtag_scanner_callback(struct ble_gap_event *event, size_t len) {
         bool patternFound = false;
         for (size_t i = 0; i <= payloadLength - 4; i++) {
             if ((payload[i] == 0x1E && payload[i + 1] == 0xFF && payload[i + 2] == 0x4C &&
-                 payload[i + 3] == 0x00) ||
+                 payload[i + 3] == 0x00) || // Pattern 1 (Nearby)
                 (payload[i] == 0x4C && payload[i + 1] == 0x00 && payload[i + 2] == 0x12 &&
-                 payload[i + 3] == 0x19)) {
+                 payload[i + 3] == 0x19)) { // Pattern 2 (Offline Finding)
                 patternFound = true;
                 break;
             }
         }
 
         if (patternFound) {
-            // pulse rgb blue once when air tag is found
+            // Check if this AirTag is already discovered
+            bool already_discovered = false;
+            for (int i = 0; i < discovered_airtag_count; i++) {
+                if (memcmp(discovered_airtags[i].addr.val, event->disc.addr.val, 6) == 0) {
+                    already_discovered = true;
+                    // Update RSSI and maybe payload if needed
+                    discovered_airtags[i].rssi = event->disc.rssi;
+                    // Optionally update payload if it can change
+                    // memcpy(discovered_airtags[i].payload, payload, payloadLength);
+                    // discovered_airtags[i].payload_len = payloadLength;
+                    break;
+                }
+            }
+
+            if (!already_discovered && discovered_airtag_count < MAX_AIRTAGS) {
+                // Add new AirTag
+                AirTagDevice *new_tag = &discovered_airtags[discovered_airtag_count];
+                memcpy(new_tag->addr.val, event->disc.addr.val, 6);
+                new_tag->addr.type = event->disc.addr.type;
+                new_tag->rssi = event->disc.rssi;
+                memcpy(new_tag->payload, payload, payloadLength);
+                new_tag->payload_len = payloadLength;
+                new_tag->selected_for_spoofing = false;
+                discovered_airtag_count++;
+                airTagCount++; // Increment the original counter too, maybe rename it later
+
+                // pulse rgb blue once when a *new* air tag is found
             pulse_once(&rgb_manager, 0, 0, 255);
 
             char macAddress[18];
             snprintf(macAddress, sizeof(macAddress), "%02x:%02x:%02x:%02x:%02x:%02x",
                      event->disc.addr.val[0], event->disc.addr.val[1], event->disc.addr.val[2],
                      event->disc.addr.val[3], event->disc.addr.val[4], event->disc.addr.val[5]);
-
             int rssi = event->disc.rssi;
 
-            printf("AirTag found!\n");
-            printf("Tag: %d\n", airTagCount);
+                printf("New AirTag found! (Total: %d)\n", airTagCount);
+                printf("Index: %d\n", discovered_airtag_count - 1); // Index of the newly added tag
             printf("MAC Address: %s\n", macAddress);
             printf("RSSI: %d dBm\n", rssi);
-
             printf("Payload Data: ");
             for (size_t i = 0; i < payloadLength; i++) {
                 printf("%02X ", payload[i]);
             }
             printf("\n\n");
 
-            TERMINAL_VIEW_ADD_TEXT("AirTag found!\n");
-            TERMINAL_VIEW_ADD_TEXT("Tag: %d\n", airTagCount);
+                TERMINAL_VIEW_ADD_TEXT("New AirTag found! (Total: %d)\n", airTagCount);
+                TERMINAL_VIEW_ADD_TEXT("Index: %d\n", discovered_airtag_count - 1);
             TERMINAL_VIEW_ADD_TEXT("MAC Address: %s\n", macAddress);
             TERMINAL_VIEW_ADD_TEXT("RSSI: %d dBm\n", rssi);
-            TERMINAL_VIEW_ADD_TEXT("\n\n");
+                TERMINAL_VIEW_ADD_TEXT("\n");
+            }
         }
+    }
+}
+
+// Function to list discovered AirTags
+void ble_list_airtags(void) {
+    printf("--- Discovered AirTags (%d) ---\n", discovered_airtag_count);
+    TERMINAL_VIEW_ADD_TEXT("--- Discovered AirTags (%d) ---\n", discovered_airtag_count);
+    if (discovered_airtag_count == 0) {
+        printf("No AirTags discovered yet.\n");
+        TERMINAL_VIEW_ADD_TEXT("No AirTags discovered yet.\n");
+        return;
+    }
+
+    for (int i = 0; i < discovered_airtag_count; i++) {
+        char macAddress[18];
+        snprintf(macAddress, sizeof(macAddress), "%02x:%02x:%02x:%02x:%02x:%02x",
+                 discovered_airtags[i].addr.val[0], discovered_airtags[i].addr.val[1], discovered_airtags[i].addr.val[2],
+                 discovered_airtags[i].addr.val[3], discovered_airtags[i].addr.val[4], discovered_airtags[i].addr.val[5]);
+
+        printf("Index: %d | MAC: %s | RSSI: %d dBm %s\n",
+               i, macAddress, discovered_airtags[i].rssi,
+               (i == selected_airtag_index) ? " (Selected)" : "");
+        TERMINAL_VIEW_ADD_TEXT("Idx: %d MAC: %s RSSI: %d %s\n",
+                               i, macAddress, discovered_airtags[i].rssi,
+                               (i == selected_airtag_index) ? "(Sel)" : "");
+        // Optionally print payload too
+        // printf("  Payload (%zu bytes): ", discovered_airtags[i].payload_len);
+        // for(size_t j = 0; j < discovered_airtags[i].payload_len; j++) {
+        //     printf("%02X ", discovered_airtags[i].payload[j]);
+        // }
+        // printf("\n");
+    }
+    printf("-----------------------------\n");
+    TERMINAL_VIEW_ADD_TEXT("-----------------------------\n");
+}
+
+// Function to select an AirTag by index
+void ble_select_airtag(int index) {
+    if (index < 0 || index >= discovered_airtag_count) {
+        printf("Error: Invalid AirTag index %d. Use 'listairtags' to see valid indices.\n", index);
+        TERMINAL_VIEW_ADD_TEXT("Error: Invalid AirTag index %d.\nUse 'listairtags'.\n", index);
+        selected_airtag_index = -1; // Unselect if index is invalid
+        return;
+    }
+
+    selected_airtag_index = index;
+    char macAddress[18];
+    snprintf(macAddress, sizeof(macAddress), "%02x:%02x:%02x:%02x:%02x:%02x",
+             discovered_airtags[index].addr.val[0], discovered_airtags[index].addr.val[1], discovered_airtags[index].addr.val[2],
+             discovered_airtags[index].addr.val[3], discovered_airtags[index].addr.val[4], discovered_airtags[index].addr.val[5]);
+    printf("Selected AirTag at index %d: MAC %s\n", index, macAddress);
+    TERMINAL_VIEW_ADD_TEXT("Selected AirTag %d: MAC %s\n", index, macAddress);
+}
+
+// Function to start spoofing the selected AirTag (Basic Implementation)
+void ble_start_spoofing_selected_airtag(void) {
+    if (selected_airtag_index < 0 || selected_airtag_index >= discovered_airtag_count) {
+        printf("Error: No AirTag selected for spoofing. Use 'selectairtag <index>'.\n");
+        TERMINAL_VIEW_ADD_TEXT("Error: No AirTag selected.\nUse 'selectairtag <index>'.\n");
+        return;
+    }
+
+    // Stop current activities (scanning, advertising) before starting new advertisement
+    ble_stop(); // Stop scanning, etc.
+    // vTaskDelay(pdMS_TO_TICKS(100)); // Short delay to allow stopping
+
+    AirTagDevice *tag_to_spoof = &discovered_airtags[selected_airtag_index];
+
+    struct ble_gap_adv_params adv_params;
+    struct ble_hs_adv_fields fields;
+    int rc;
+
+    // Configure advertisement fields based on the captured AirTag payload
+    memset(&fields, 0, sizeof fields);
+
+    // Set flags (General Discoverable Mode, BR/EDR Not Supported) - typical for BLE beacons
+    fields.flags = BLE_HS_ADV_F_DISC_GEN | BLE_HS_ADV_F_BREDR_UNSUP;
+
+    // Set the manufacturer data using the captured payload
+    // The AirTag payload IS the manufacturer data for Company ID 0x004C (Apple)
+    // We need to ensure the payload structure is correct for advertising.
+    // Usually, it starts with Length, Type (0xFF), Company ID (2 bytes), then data.
+    // We might need to slightly adjust the stored payload if it doesn't include the Length/Type/CompanyID header.
+    // Assuming tag_to_spoof->payload contains the complete Manufacturer Specific Data field content
+    // starting *after* the Company ID. Let's verify the actual AirTag payload structure.
+    // Looking at the detection pattern:
+    // 1E FF 4C 00 ... (Nearby) -> Length=0x1E, Type=0xFF, Company=0x004C
+    // 4C 00 12 19 ... (Offline Finding) -> This seems *part* of the Apple data, maybe not the whole adv packet?
+    // Need to confirm the *entire* advertisement structure.
+    // For simplicity, let's assume tag_to_spoof->payload contains the data *after* Company ID.
+
+    // Find the start of the Apple Manufacturer Data (0xFF) in the payload
+    uint8_t *mfg_data_start = NULL;
+    size_t mfg_data_len = 0;
+    size_t current_index = 0;
+    while (current_index < tag_to_spoof->payload_len) {
+        uint8_t field_len = tag_to_spoof->payload[current_index];
+        if (field_len == 0 || current_index + field_len >= tag_to_spoof->payload_len) break;
+        uint8_t field_type = tag_to_spoof->payload[current_index + 1];
+        if (field_type == 0xFF && field_len >= 3) { // Manufacturer Specific Data
+            uint16_t company_id = tag_to_spoof->payload[current_index + 2] | (tag_to_spoof->payload[current_index + 3] << 8);
+            if (company_id == 0x004C) { // Apple
+                mfg_data_start = &tag_to_spoof->payload[current_index]; // Point to the *full* field (Len, Type, Company, Data)
+                mfg_data_len = field_len + 1; // Total length including the length byte itself
+                break;
+            }
+        }
+        current_index += field_len + 1;
+    }
+
+    if (mfg_data_start == NULL || mfg_data_len == 0) {
+        printf("Error: Could not extract Apple Manufacturer Data from selected AirTag payload.\n");
+        TERMINAL_VIEW_ADD_TEXT("Error: Cannot extract Apple Mfg Data.\n");
+        // Attempt raw payload advertisement as fallback?
+         if (tag_to_spoof->payload_len > 0) {
+            fields.mfg_data = tag_to_spoof->payload;
+            fields.mfg_data_len = tag_to_spoof->payload_len;
+            printf("Warning: Using raw payload for advertisement data.\n");
+            TERMINAL_VIEW_ADD_TEXT("Warn: Using raw payload for adv.\n");
+         } else {
+             return; // No data to advertise
+         }
+    } else {
+         fields.mfg_data = mfg_data_start;
+         fields.mfg_data_len = mfg_data_len;
+    }
+
+
+    // Set the advertisement data
+    rc = ble_gap_adv_set_fields(&fields);
+    if (rc != 0) {
+        ESP_LOGE(TAG_BLE, "Error setting advertisement data; rc=%d", rc);
+        TERMINAL_VIEW_ADD_TEXT("Error setting adv data; rc=%d\n", rc);
+        return;
+    }
+
+    // Configure advertisement parameters
+    memset(&adv_params, 0, sizeof adv_params);
+    adv_params.conn_mode = BLE_GAP_CONN_MODE_NON; // Non-connectable
+    adv_params.disc_mode = BLE_GAP_DISC_MODE_GEN; // General discoverable
+
+    // Start advertising using the selected AirTag's address
+    uint8_t own_addr_type;
+    // Use the address type and value from the selected AirTag
+    // We need to configure our device to use this specific address (Static Random or Public)
+    // Note: Spoofing a Public address might be problematic/illegal depending on context.
+    // AirTags typically use Random Static addresses.
+    // Check the address type. We can usually only spoof Random addresses.
+    if (tag_to_spoof->addr.type == BLE_ADDR_RANDOM) {
+        rc = ble_hs_id_set_rnd(tag_to_spoof->addr.val); // Set the stack's random address
+        if (rc != 0) {
+            ESP_LOGE(TAG_BLE, "Failed to set random address for spoofing; rc=%d", rc);
+            TERMINAL_VIEW_ADD_TEXT("Error: Failed set spoof rnd addr; rc=%d\n", rc);
+            // Fallback to default address
+            rc = ble_hs_id_infer_auto(0, &own_addr_type);
+            if (rc != 0) {
+                ESP_LOGE(TAG_BLE, "Error inferring own address; rc=%d", rc);
+                TERMINAL_VIEW_ADD_TEXT("Error inferring own addr; rc=%d\n", rc);
+                return;
+            }
+            ESP_LOGW(TAG_BLE, "Using default inferred address type %d", own_addr_type);
+            TERMINAL_VIEW_ADD_TEXT("Warn: Using default address.\n");
+        } else {
+            // If setting random address succeeded, use it for advertising
+            own_addr_type = BLE_OWN_ADDR_RANDOM;
+            ESP_LOGI(TAG_BLE, "Set random address successfully. Advertising with type %d", own_addr_type);
+            TERMINAL_VIEW_ADD_TEXT("Using spoofed random address.\n");
+        }
+    } else {
+        // We likely cannot spoof Public addresses this way.
+        ESP_LOGW(TAG_BLE, "Cannot spoof non-random address type %d. Using default address.", tag_to_spoof->addr.type);
+        TERMINAL_VIEW_ADD_TEXT("Warn: Cannot spoof addr type %d.\nUsing default address.\n", tag_to_spoof->addr.type);
+        // Fallback to default address generation
+        rc = ble_hs_id_infer_auto(0, &own_addr_type);
+        if (rc != 0) {
+            ESP_LOGE(TAG_BLE, "Error inferring own address; rc=%d", rc);
+            TERMINAL_VIEW_ADD_TEXT("Error inferring own addr; rc=%d\n", rc);
+            return;
+        }
+    }
+
+    rc = ble_gap_adv_start(own_addr_type, NULL, BLE_HS_FOREVER, &adv_params, ble_gap_event_general, NULL);
+    if (rc != 0) {
+        ESP_LOGE(TAG_BLE, "Error starting spoofing advertisement; rc=%d", rc);
+        TERMINAL_VIEW_ADD_TEXT("Error starting spoof adv; rc=%d\n", rc);
+        return;
+    }
+
+    char macAddress[18];
+    snprintf(macAddress, sizeof(macAddress), "%02x:%02x:%02x:%02x:%02x:%02x",
+             tag_to_spoof->addr.val[0], tag_to_spoof->addr.val[1], tag_to_spoof->addr.val[2],
+             tag_to_spoof->addr.val[3], tag_to_spoof->addr.val[4], tag_to_spoof->addr.val[5]);
+    printf("Started spoofing AirTag %d (MAC: %s)\n", selected_airtag_index, macAddress);
+    TERMINAL_VIEW_ADD_TEXT("Started spoofing AirTag %d\nMAC: %s\n", selected_airtag_index, macAddress);
+    // Pulse green maybe?
+    pulse_once(&rgb_manager, 0, 255, 0);
+}
+
+// Function to stop any ongoing spoofing advertisement
+void ble_stop_spoofing(void) {
+    if (ble_gap_adv_active()) {
+        int rc = ble_gap_adv_stop();
+        if (rc == 0) {
+            printf("Stopped AirTag spoofing advertisement.\n");
+            TERMINAL_VIEW_ADD_TEXT("Stopped AirTag spoofing.\n");
+        } else {
+            ESP_LOGE(TAG_BLE, "Error stopping spoofing advertisement; rc=%d", rc);
+            TERMINAL_VIEW_ADD_TEXT("Error stopping spoof adv; rc=%d\n", rc);
+        }
+        // Reset selected index after stopping spoof
+        selected_airtag_index = -1;
+    } else {
+        printf("No spoofing advertisement active.\n");
+        TERMINAL_VIEW_ADD_TEXT("No spoofing adv active.\n");
     }
 }
 
@@ -621,6 +874,9 @@ void ble_stop(void) {
     pcap_flush_buffer_to_file(); // Final flush
     pcap_file_close();           // Close the file after final flush
 
+    // Stop spoofing if it was active
+    ble_stop_spoofing();
+
     int rc = ble_gap_disc_cancel();
 
     switch (rc) {
@@ -663,6 +919,11 @@ void ble_start_raw_ble_packetscan(void) {
 void ble_start_airtag_scanner(void) {
     ble_register_handler(airtag_scanner_callback);
     ble_start_scanning();
+    // Reset discovered count when starting a new scan session? Or keep appending?
+    // Let's keep appending for now. Add a command to clear if needed later.
+    // discovered_airtag_count = 0;
+    // airTagCount = 0;
+    // selected_airtag_index = -1;
 }
 
 static void ble_pcap_callback(struct ble_gap_event *event, size_t len) {
@@ -718,6 +979,40 @@ static void ble_pcap_callback(struct ble_gap_event *event, size_t len) {
                hci_len);
 
         pcap_write_packet_to_buffer(hci_buffer, hci_len, PCAP_CAPTURE_BLUETOOTH);
+    }
+
+    pcap_flush_buffer_to_file(); // Final flush
+    pcap_file_close();           // Close the file after final flush
+
+    // Stop spoofing if it was active
+    ble_stop_spoofing();
+
+    int rc = ble_gap_disc_cancel();
+
+    switch (rc) {
+    case 0:
+        printf("BLE scan stopped successfully.\n");
+        TERMINAL_VIEW_ADD_TEXT("BLE scan stopped successfully.\n");
+        break;
+    case BLE_HS_EBUSY:
+        printf("BLE scan is busy\n");
+        TERMINAL_VIEW_ADD_TEXT("BLE scan is busy\n");
+        break;
+    case BLE_HS_ETIMEOUT:
+        printf("BLE operation timed out.\n");
+        TERMINAL_VIEW_ADD_TEXT("BLE operation timed out.\n");
+        break;
+    case BLE_HS_ENOTCONN:
+        printf("BLE not connected.\n");
+        TERMINAL_VIEW_ADD_TEXT("BLE not connected.\n");
+        break;
+    case BLE_HS_EINVAL:
+        printf("BLE invalid parameter.\n");
+        TERMINAL_VIEW_ADD_TEXT("BLE invalid parameter.\n");
+        break;
+    default:
+        printf("Error stopping BLE scan: %d\n", rc);
+        TERMINAL_VIEW_ADD_TEXT("Error stopping BLE scan: %d\n", rc);
     }
 }
 

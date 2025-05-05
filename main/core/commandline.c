@@ -27,6 +27,14 @@
 static Command *command_list_head = NULL;
 TaskHandle_t VisualizerHandle = NULL;
 
+// Forward declarations for command handlers
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_list_airtags_cmd(int argc, char **argv);
+void handle_select_airtag(int argc, char **argv);
+void handle_spoof_airtag(int argc, char **argv);
+void handle_stop_spoof(int argc, char **argv);
+#endif
+
 #define MAX_PORTAL_PATH_LEN 128 // reasonable i guess?
 
 void command_init() { command_list_head = NULL; }
@@ -118,6 +126,9 @@ void handle_list(int argc, char **argv) {
         printf("Listed Stations...\n");
         TERMINAL_VIEW_ADD_TEXT("Listed Stations...\n");
         return;
+    } else if (argc > 1 && strcmp(argv[1], "-airtags") == 0) {
+        ble_list_airtags();
+        return;
     } else {
         printf("Usage: list -a (for Wi-Fi scan results)\n");
         TERMINAL_VIEW_ADD_TEXT("Usage: list -a (for Wi-Fi scan results)\n");
@@ -208,6 +219,15 @@ void handle_select_cmd(int argc, char **argv) {
         } else {
             printf("Error: is not a valid number.\n");
             TERMINAL_VIEW_ADD_TEXT("Error: is not a valid number.\n");
+        }
+    } else if (strcmp(argv[1], "-airtag") == 0) {
+        char *endptr;
+        int num = (int)strtol(argv[2], &endptr, 10);
+        if (*endptr == '\0') {
+            ble_select_airtag(num);
+        } else {
+            printf("Error: '%s' is not a valid number.\n", argv[2]);
+            TERMINAL_VIEW_ADD_TEXT("Error: '%s' is not a valid number.\n", argv[2]);
         }
     } else {
         printf("Invalid option. Usage: select -a <number> or select -s <number>\n");
@@ -894,16 +914,18 @@ void handle_help(int argc, char **argv) {
 
     printf("list\n");
     printf("    Description: List Wi-Fi scan results or connected stations.\n");
-    printf("    Usage: list -a | list -s\n");
+    printf("    Usage: list -a | list -s | list -airtags\n");
     printf("    Arguments:\n");
     printf("        -a  : Show access points from Wi-Fi scan\n");
-    printf("        -s  : List connected stations\n\n");
+    printf("        -s  : List connected stations\n");
+    printf("        -airtags: List discovered AirTags\n\n");
     TERMINAL_VIEW_ADD_TEXT("list\n");
     TERMINAL_VIEW_ADD_TEXT("    Description: List Wi-Fi scan results or connected stations.\n");
-    TERMINAL_VIEW_ADD_TEXT("    Usage: list -a | list -s\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: list -a | list -s | list -airtags\n");
     TERMINAL_VIEW_ADD_TEXT("    Arguments:\n");
     TERMINAL_VIEW_ADD_TEXT("        -a  : Show access points from Wi-Fi scan\n");
-    TERMINAL_VIEW_ADD_TEXT("        -s  : List connected stations\n\n");
+    TERMINAL_VIEW_ADD_TEXT("        -s  : List connected stations\n");
+    TERMINAL_VIEW_ADD_TEXT("        -airtags: List discovered AirTags\n\n");
 
     printf("beaconspam\n");
     printf("    Description: Start beacon spam with different modes.\n");
@@ -937,17 +959,21 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("    Usage: stopdeauth\n\n");
 
     printf("select\n");
-    printf("    Description: Select an access point by index from the scan "
+    printf("    Description: Select an access point, station, or AirTag by index from the scan "
            "results.\n");
-    printf("    Usage: select -a <number>\n");
+    printf("    Usage: select -a <num> | select -s <num> | select -airtag <num>\n");
     printf("    Arguments:\n");
-    printf("        -a  : AP selection index (must be a valid number)\n\n");
+    printf("        -a      : AP selection index\n");
+    printf("        -s      : Station selection index\n");
+    printf("        -airtag : AirTag selection index\n\n");
     TERMINAL_VIEW_ADD_TEXT("select\n");
-    TERMINAL_VIEW_ADD_TEXT("    Description: Select an access point by index "
+    TERMINAL_VIEW_ADD_TEXT("    Description: Select an access point, station, or AirTag by index "
                            "from the scan results.\n");
-    TERMINAL_VIEW_ADD_TEXT("    Usage: select -a <number>\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: select -a <num> | select -s <num> | select -airtag <num>\n");
     TERMINAL_VIEW_ADD_TEXT("    Arguments:\n");
-    TERMINAL_VIEW_ADD_TEXT("        -a  : AP selection index (must be a valid number)\n\n");
+    TERMINAL_VIEW_ADD_TEXT("        -a      : AP selection index\n");
+    TERMINAL_VIEW_ADD_TEXT("        -s      : Station selection index\n");
+    TERMINAL_VIEW_ADD_TEXT("        -airtag : AirTag selection index\n\n");
 
     printf("startportal\n");
     printf("    Description: Start an Evil Portal using a local file or the default embedded page.\n");
@@ -1700,6 +1726,11 @@ void register_commands() {
 #ifndef CONFIG_IDF_TARGET_ESP32S2
     register_command("blescan", handle_ble_scan_cmd);
     register_command("blewardriving", handle_ble_wardriving);
+    // AirTag Commands
+    register_command("listairtags", ble_list_airtags); // Direct command for listing
+    register_command("selectairtag", ble_select_airtag); // Direct command for selecting
+    register_command("spoofairtag", handle_spoof_airtag);
+    register_command("stopspoof", handle_stop_spoof);
 #endif
 #ifdef DEBUG
     register_command("crash", handle_crash); // For Debugging
@@ -1718,3 +1749,44 @@ void register_commands() {
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }
+
+// Helper function to simplify calling list airtags
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_list_airtags_cmd(int argc, char **argv) {
+    ble_list_airtags();
+}
+#endif
+
+// Select AirTag handler
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_select_airtag(int argc, char **argv) {
+    if (argc != 2) {
+        printf("Usage: selectairtag <number>\n");
+        TERMINAL_VIEW_ADD_TEXT("Usage: selectairtag <number>\n");
+        return;
+    }
+
+    char *endptr;
+    int num = (int)strtol(argv[1], &endptr, 10);
+    if (*endptr == '\0') {
+        ble_select_airtag(num);
+    } else {
+        printf("Error: '%s' is not a valid number.\n", argv[1]);
+        TERMINAL_VIEW_ADD_TEXT("Error: '%s' is not a valid number.\n", argv[1]);
+    }
+}
+#endif
+
+// Spoof AirTag handler
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_spoof_airtag(int argc, char **argv) {
+    ble_start_spoofing_selected_airtag();
+}
+#endif
+
+// Stop Spoof handler
+#ifndef CONFIG_IDF_TARGET_ESP32S2
+void handle_stop_spoof(int argc, char **argv) {
+    ble_stop_spoofing();
+}
+#endif

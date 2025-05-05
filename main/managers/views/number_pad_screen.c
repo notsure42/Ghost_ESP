@@ -53,6 +53,9 @@ static void submit_number() {
             case NP_MODE_STA:
                 snprintf(command, sizeof(command), "select -s %s", input_buffer);
                 break;
+            case NP_MODE_AIRTAG:
+                snprintf(command, sizeof(command), "selectairtag %s", input_buffer);
+                break;
             case NP_MODE_LAN:
                 snprintf(command, sizeof(command), "select -a %s", input_buffer);
                 break;
@@ -137,6 +140,8 @@ static void number_pad_create() {
         title = "Select AP";
     } else if (current_mode == NP_MODE_STA) {
         title = "Select Station";
+    } else if (current_mode == NP_MODE_AIRTAG) {
+        title = "Select AirTag";
     } else {
         title = "Select LAN";
     }

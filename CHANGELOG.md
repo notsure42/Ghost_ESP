@@ -6,7 +6,8 @@
 
 - Attacks
   - Added support for direct station deauthentication
-
+  - Added support for AirTag selection and spoofing
+  
 - Commands
   - Added station selection capability to existing select command
   - Added a timezone command to set the timezone with a POSIX TZ string
