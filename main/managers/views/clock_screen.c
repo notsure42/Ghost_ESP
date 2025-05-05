@@ -44,6 +44,7 @@ void clock_create(void) {
     lv_obj_set_size(clock_container, LV_HOR_RES, LV_VER_RES);
     lv_obj_set_style_bg_opa(clock_container, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(clock_container, 0, 0);
+    lv_obj_set_style_border_color(clock_container, lv_color_hex(0x000000), 0);
     lv_obj_set_scrollbar_mode(clock_container, LV_SCROLLBAR_MODE_OFF);
     lv_obj_align(clock_container, LV_ALIGN_CENTER, 0, 0);
 
