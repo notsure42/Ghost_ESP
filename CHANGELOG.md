@@ -33,7 +33,8 @@
   - Status bar now updates every second instead of when views change
   - Removed rounding on the status bar
   - Changed bootup icon
-
+  - Removed default shadow/border from back buttons
+  
 - Commands
   - List stations with sanitized ascii and numeric index
   - Label APs with blank SSID fields as "Hidden"

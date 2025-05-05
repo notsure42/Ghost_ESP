@@ -190,6 +190,8 @@ void options_menu_create() {
     lv_obj_align(scroll_up_btn, LV_ALIGN_BOTTOM_RIGHT, -SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align right
     lv_obj_set_style_bg_color(scroll_up_btn, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_set_style_radius(scroll_up_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_set_style_border_width(scroll_up_btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(scroll_up_btn, 0, LV_PART_MAIN);
     lv_obj_add_event_cb(scroll_up_btn, scroll_options_up, LV_EVENT_CLICKED, NULL);
     lv_obj_t *up_label = lv_label_create(scroll_up_btn);
     lv_label_set_text(up_label, LV_SYMBOL_UP); // Keep UP symbol
@@ -200,6 +202,8 @@ void options_menu_create() {
     lv_obj_align(scroll_down_btn, LV_ALIGN_BOTTOM_LEFT, SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align left
     lv_obj_set_style_bg_color(scroll_down_btn, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_set_style_radius(scroll_down_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_set_style_border_width(scroll_down_btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(scroll_down_btn, 0, LV_PART_MAIN);
     lv_obj_add_event_cb(scroll_down_btn, scroll_options_down, LV_EVENT_CLICKED, NULL);
     lv_obj_t *down_label = lv_label_create(scroll_down_btn);
     lv_label_set_text(down_label, LV_SYMBOL_DOWN); // Keep DOWN symbol
@@ -212,6 +216,8 @@ void options_menu_create() {
     lv_obj_set_style_bg_color(back_btn, lv_color_hex(0x555555), LV_PART_MAIN); // Different color
     lv_obj_set_style_radius(back_btn, 5, LV_PART_MAIN); // Slightly rounded rectangle
     lv_obj_set_style_pad_hor(back_btn, 10, LV_PART_MAIN); // Add horizontal padding
+    lv_obj_set_style_border_width(back_btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(back_btn, 0, LV_PART_MAIN);
     lv_obj_add_event_cb(back_btn, back_event_cb, LV_EVENT_CLICKED, NULL);
     lv_obj_t *back_label = lv_label_create(back_btn);
     lv_label_set_text(back_label, LV_SYMBOL_LEFT " Back"); // Back symbol and text
