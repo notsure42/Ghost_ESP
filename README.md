@@ -30,7 +30,7 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 
 
 
-1. Follow our [Flashing Guide](https://github.com/Spooks4576/Ghost_ESP/wiki) for installation and configuration.
+1. Flash your device at https://flasher.ghostesp.net
 
 
 2. Join our **NEW** community on [Discord](https://discord.gg/4svN9aPH) for support and feedback.
