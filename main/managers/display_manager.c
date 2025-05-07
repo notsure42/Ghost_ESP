@@ -13,6 +13,7 @@
 #include "managers/views/terminal_screen.h"
 #include "managers/views/clock_screen.h"
 #include <stdlib.h>
+#include "esp_wifi.h"
 
 #ifdef CONFIG_USE_CARDPUTER
 #include "vendor/keyboard_handler.h"
@@ -66,6 +67,8 @@ static lv_timer_t *status_update_timer = NULL;
 #define DEFAULT_DISPLAY_TIMEOUT_MS 30000
 
 uint32_t display_timeout_ms = DEFAULT_DISPLAY_TIMEOUT_MS;
+
+static uint16_t original_beacon_interval = 100;
 
 void set_display_timeout(uint32_t timeout_ms) {
   display_timeout_ms = timeout_ms;
@@ -511,12 +514,29 @@ void set_backlight_brightness(uint8_t percentage) {
     if (rainbow_timer) lv_timer_pause(rainbow_timer);
     if (terminal_update_timer) lv_timer_pause(terminal_update_timer);
     if (clock_timer) lv_timer_pause(clock_timer);
+    {
+      wifi_config_t cfg;
+      if (esp_wifi_get_config(ESP_IF_WIFI_AP, &cfg) == ESP_OK) {
+        original_beacon_interval = cfg.ap.beacon_interval;
+        cfg.ap.beacon_interval = 1000;
+        esp_wifi_set_config(ESP_IF_WIFI_AP, &cfg);
+      }
+      esp_wifi_set_ps(WIFI_PS_MAX_MODEM);
+    }
   } else {
     if (status_update_timer) lv_timer_resume(status_update_timer);
     if (lvgl_task_handle) vTaskResume(lvgl_task_handle);
     if (rainbow_timer) lv_timer_resume(rainbow_timer);
     if (terminal_update_timer) lv_timer_resume(terminal_update_timer);
     if (clock_timer) lv_timer_resume(clock_timer);
+    {
+      esp_wifi_set_ps(WIFI_PS_NONE);
+      wifi_config_t cfg;
+      if (esp_wifi_get_config(ESP_IF_WIFI_AP, &cfg) == ESP_OK) {
+        cfg.ap.beacon_interval = original_beacon_interval;
+        esp_wifi_set_config(ESP_IF_WIFI_AP, &cfg);
+      }
+    }
   }
 }
 
