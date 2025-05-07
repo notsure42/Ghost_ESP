@@ -71,6 +71,8 @@ uint32_t display_timeout_ms = DEFAULT_DISPLAY_TIMEOUT_MS;
 
 static uint16_t original_beacon_interval = 100;
 
+#define BACKLIGHT_SLEEP_POLL_MS 50  // Poll slower when dimmed
+
 void set_display_timeout(uint32_t timeout_ms) {
   display_timeout_ms = timeout_ms;
 }
@@ -679,7 +681,9 @@ void hardware_input_task(void *pvParameters) {
       is_backlight_dimmed = true;
     }
 
-    vTaskDelay(tick_interval);
+    // When backlight is off (dimmed), poll less frequently to save power
+    TickType_t delay = (is_backlight_dimmed ? pdMS_TO_TICKS(BACKLIGHT_SLEEP_POLL_MS) : tick_interval);
+    vTaskDelay(delay);
   }
 
   vTaskDelete(NULL);
