@@ -14,6 +14,7 @@
 #include "managers/views/clock_screen.h"
 #include <stdlib.h>
 #include "esp_wifi.h"
+#include "esp_pm.h"
 
 #ifdef CONFIG_USE_CARDPUTER
 #include "vendor/keyboard_handler.h"
@@ -334,6 +335,15 @@ void display_manager_add_status_bar(const char *CurrentMenuName) {
 }
 
 void display_manager_init(void) {
+  esp_pm_config_esp32_t pm_cfg = {
+      .max_freq_mhz = CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ,
+      .min_freq_mhz = 80,
+      .light_sleep_enable = true,
+  };
+  esp_err_t pm_err = esp_pm_configure(&pm_cfg);
+  if (pm_err != ESP_OK) {
+    ESP_LOGW(TAG, "PM configure failed: %s", esp_err_to_name(pm_err));
+  }
 #ifndef CONFIG_JC3248W535EN_LCD
   lv_init();
 #ifdef CONFIG_USE_CARDPUTER
