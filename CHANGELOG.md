@@ -45,6 +45,8 @@
 - Power
   - Suspend LVGL, status bar update timer, and misc tasks when backlight is off
   - Use wifi power saving mode if no client is connected
+  - Poll touch 5x slower when backlight off
+  - Enabled light-sleep idle and frequency scaling
 
 - RGB
   - Refactored rgb_manager_set_color to use is_separate_pins flag instead of compile-time directives
