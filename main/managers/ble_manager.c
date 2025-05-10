@@ -566,28 +566,22 @@ void ble_start_spoofing_selected_airtag(void) {
         if (field_len == 0 || current_index + field_len >= tag_to_spoof->payload_len) break;
         uint8_t field_type = tag_to_spoof->payload[current_index + 1];
         if (field_type == 0xFF && field_len >= 3) { // Manufacturer Specific Data
-            uint16_t company_id = tag_to_spoof->payload[current_index + 2] | (tag_to_spoof->payload[current_index + 3] << 8);
-            if (company_id == 0x004C) { // Apple
-                mfg_data_start = &tag_to_spoof->payload[current_index]; // Point to the *full* field (Len, Type, Company, Data)
-                mfg_data_len = field_len + 1; // Total length including the length byte itself
-                break;
-            }
+            mfg_data_start = &tag_to_spoof->payload[current_index + 2];
+            mfg_data_len = field_len - 1;
+            break;
         }
         current_index += field_len + 1;
     }
 
     if (mfg_data_start == NULL || mfg_data_len == 0) {
-        printf("Error: Could not extract Apple Manufacturer Data from selected AirTag payload.\n");
-        TERMINAL_VIEW_ADD_TEXT("Error: Cannot extract Apple Mfg Data.\n");
-        // Attempt raw payload advertisement as fallback?
-         if (tag_to_spoof->payload_len > 0) {
-            fields.mfg_data = tag_to_spoof->payload;
-            fields.mfg_data_len = tag_to_spoof->payload_len;
-            printf("Warning: Using raw payload for advertisement data.\n");
+        if (tag_to_spoof->payload_len > 2) {
+            fields.mfg_data = &tag_to_spoof->payload[2];
+            fields.mfg_data_len = tag_to_spoof->payload_len - 2;
+            printf("Warning: Using raw payload data for advertisement.\n");
             TERMINAL_VIEW_ADD_TEXT("Warn: Using raw payload for adv.\n");
-         } else {
-             return; // No data to advertise
-         }
+        } else {
+            return; // No data to advertise
+        }
     } else {
          fields.mfg_data = mfg_data_start;
          fields.mfg_data_len = mfg_data_len;

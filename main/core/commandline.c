@@ -1870,8 +1870,8 @@ void register_commands() {
     register_command("blescan", handle_ble_scan_cmd);
     register_command("blewardriving", handle_ble_wardriving);
     // AirTag Commands
-    register_command("listairtags", ble_list_airtags); // Direct command for listing
-    register_command("selectairtag", ble_select_airtag); // Direct command for selecting
+    register_command("listairtags", handle_list_airtags_cmd);
+    register_command("selectairtag", handle_select_airtag);
     register_command("spoofairtag", handle_spoof_airtag);
     register_command("stopspoof", handle_stop_spoof);
 #endif
