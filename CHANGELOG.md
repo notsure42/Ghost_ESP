@@ -37,7 +37,8 @@
   - Removed rounding on the status bar
   - Changed bootup icon
   - Removed default shadow/border from back buttons
-  
+  - Changed option menu item color to be black and white
+
 - Commands
   - List stations with sanitized ascii and numeric index
   - Label APs with blank SSID fields as "Hidden"
@@ -50,6 +51,9 @@
 
 - RGB
   - Refactored rgb_manager_set_color to use is_separate_pins flag instead of compile-time directives
+
+- WebUI
+  - Changed color theme to black and white
 
 ### Bug Fixes
 

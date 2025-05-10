@@ -250,18 +250,19 @@ static void select_option_item(int index) {
             lv_obj_set_style_bg_color(previous_item, lv_color_hex(0x1E1E1E), LV_PART_MAIN);
             lv_obj_set_style_bg_grad_color(previous_item, lv_color_hex(0x1E1E1E), LV_PART_MAIN);
             lv_obj_set_style_bg_grad_dir(previous_item, LV_GRAD_DIR_NONE, LV_PART_MAIN);
+            lv_obj_t *prev_label = lv_obj_get_child(previous_item, 0);
+            if(prev_label) lv_obj_set_style_text_color(prev_label, lv_color_hex(0xFFFFFF), 0);
         }
     }
 
     lv_obj_t *current_item = lv_obj_get_child(menu_container, selected_item_index);
     if (current_item) {
-        lv_color_t orange_start = lv_color_hex(0xFF5722);
-        lv_color_t orange_end = lv_color_hex(0xD81B60);
-        lv_obj_set_style_bg_color(current_item, orange_start, LV_PART_MAIN);
-        lv_obj_set_style_bg_grad_color(current_item, orange_end, LV_PART_MAIN);
-        lv_obj_set_style_bg_grad_dir(current_item, LV_GRAD_DIR_VER, LV_PART_MAIN);
+        lv_obj_set_style_bg_color(current_item, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+        lv_obj_set_style_bg_grad_color(current_item, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
+        lv_obj_set_style_bg_grad_dir(current_item, LV_GRAD_DIR_NONE, LV_PART_MAIN);
         lv_obj_set_style_bg_opa(current_item, LV_OPA_COVER, LV_PART_MAIN);
-
+        lv_obj_t *label = lv_obj_get_child(current_item, 0);
+        if(label) lv_obj_set_style_text_color(label, lv_color_hex(0x000000), 0);
         lv_obj_scroll_to_view(current_item, LV_ANIM_OFF);
     } else {
         printf("Error: Current item not found for index %d\n", selected_item_index);
