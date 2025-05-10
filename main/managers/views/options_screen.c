@@ -20,7 +20,11 @@ unsigned long createdTimeInMs = 0;
 static int opt_touch_start_x;
 static int opt_touch_start_y;
 static bool opt_touch_started = false;
+#if CONFIG_LV_TOUCH_CONTROLLER_XPT2046
+static const int OPT_SWIPE_THRESHOLD_RATIO = 1;
+#else
 static const int OPT_SWIPE_THRESHOLD_RATIO = 10;
+#endif
 static bool option_fired = false;
 static bool option_invoked = false;
 

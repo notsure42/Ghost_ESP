@@ -47,6 +47,8 @@ static xpt2046_touch_detect_t xpt2048_is_touch_detected();
 int16_t avg_buf_x[XPT2046_AVG];
 int16_t avg_buf_y[XPT2046_AVG];
 uint8_t avg_last;
+static int rawX_min = 0xFFFF, rawX_max = 0;
+static int rawY_min = 0xFFFF, rawY_max = 0;
 
 /**********************
  *      MACROS
@@ -107,7 +109,14 @@ bool xpt2046_read(lv_indev_drv_t * drv, lv_indev_data_t * data)
 
         x = xpt2046_cmd(CMD_X_READ);
         y = xpt2046_cmd(CMD_Y_READ);
+        printf("Raw touch values: x=%d, y=%d\n", x, y);
         ESP_LOGV(TAG, "P(%d,%d)", x, y);
+
+        if (x < rawX_min) rawX_min = x;
+        if (x > rawX_max) rawX_max = x;
+        if (y < rawY_min) rawY_min = y;
+        if (y > rawY_max) rawY_max = y;
+        printf("Cal range: X=[%d..%d] Y=[%d..%d]\n", rawX_min, rawX_max, rawY_min, rawY_max);
 
 #ifndef CONFIG_USE_BIT_BANG_TOUCH
         /*Normalize Data back to 12-bits*/
@@ -119,8 +128,8 @@ bool xpt2046_read(lv_indev_drv_t * drv, lv_indev_data_t * data)
         xpt2046_corr(&x, &y);
         xpt2046_avg(&x, &y);
         last_x = x;
-        last_y = LV_VER_RES - y;
-
+        last_y = y;
+        printf("Norm touch pos: x=%d, y=%d\n", last_x, last_y);
         ESP_LOGV(TAG, "x = %d, y = %d", x, y);
     }
     else
