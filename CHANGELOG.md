@@ -17,7 +17,7 @@
 - Display
   - Add back button to options screen bottom center to return to main menu
   - Added swipe handling for the main menu and app gallery views
-  - Add vertical swipe navigation for scrolling of menu items.
+  - Add vertical swipe navigation for scrolling of menu items (requires a capacitive touch screen)
   - Added station scanning and the new station options to the wifi options screen
   - Added simple digital clock view
 
