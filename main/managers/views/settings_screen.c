@@ -1,0 +1,268 @@
+#include "managers/views/settings_screen.h"
+#include "managers/views/main_menu_screen.h"
+#include <stdio.h>
+
+#define SCROLL_BTN_SIZE 40
+#define SCROLL_BTN_PADDING 5
+
+// Settings screen UI elements
+static lv_obj_t *root_container;
+static lv_obj_t *menu_container;
+static lv_obj_t *scroll_up_btn;
+static lv_obj_t *scroll_down_btn;
+static lv_obj_t *back_btn;
+static lv_obj_t *setting_btns[2];
+static int current_option_indices[2];
+static bool touch_started = false;
+static int touch_start_x;
+static int touch_start_y;
+
+static const char *setting_labels[] = {"Display Timeout", "RGB Mode"};
+static const char *timeout_options[] = {"5s", "10s", "30s", "60s"};
+static const char *rgb_options[] = {"Normal", "Rainbow"};
+
+static void scroll_up_cb(lv_event_t *e) {
+    if (!menu_container) return;
+    lv_coord_t scroll_amt = lv_obj_get_height(menu_container) / 2;
+    lv_obj_scroll_by_bounded(menu_container, 0, -scroll_amt, LV_ANIM_OFF);
+}
+
+static void scroll_down_cb(lv_event_t *e) {
+    if (!menu_container) return;
+    lv_coord_t scroll_amt = lv_obj_get_height(menu_container) / 2;
+    lv_obj_scroll_by_bounded(menu_container, 0, scroll_amt, LV_ANIM_OFF);
+}
+
+static void change_setting(int idx, bool inc) {
+    int max = idx == 0 ? 4 : 2;
+    if (inc) {
+        current_option_indices[idx] = (current_option_indices[idx] + 1) % max;
+    } else {
+        current_option_indices[idx] = (current_option_indices[idx] + max - 1) % max;
+    }
+    if (idx == 0) {
+        uint32_t v = current_option_indices[idx] == 0 ? 5000 :
+                     current_option_indices[idx] == 1 ? 10000 :
+                     current_option_indices[idx] == 2 ? 30000 : 60000;
+        settings_set_display_timeout(&G_Settings, v);
+    } else {
+        settings_set_rgb_mode(&G_Settings, current_option_indices[idx]);
+    }
+    settings_save(&G_Settings);
+    char buf[64];
+    const char *val = idx == 0 ? timeout_options[current_option_indices[idx]] : rgb_options[current_option_indices[idx]];
+    snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[idx], val, LV_SYMBOL_RIGHT);
+    lv_obj_t *btn = setting_btns[idx];
+    lv_obj_t *label = lv_obj_get_child(btn, 0);
+    lv_label_set_text(label, buf);
+    lv_obj_set_width(label, lv_obj_get_width(btn));
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+}
+
+static void setting_row_cb(lv_event_t *e) {
+    lv_obj_t *btn = lv_event_get_target(e);
+    int idx = (int)(intptr_t)lv_obj_get_user_data(btn);
+    int max = idx == 0 ? 4 : 2;
+    current_option_indices[idx] = (current_option_indices[idx] + 1) % max;
+    if (idx == 0) {
+        uint32_t v = current_option_indices[idx] == 0 ? 5000 : current_option_indices[idx] == 1 ? 10000 : current_option_indices[idx] == 2 ? 30000 : 60000;
+        settings_set_display_timeout(&G_Settings, v);
+    } else {
+        settings_set_rgb_mode(&G_Settings, current_option_indices[idx]);
+    }
+    settings_save(&G_Settings);
+    char buf[64];
+    const char *val = idx == 0 ? timeout_options[current_option_indices[idx]] : rgb_options[current_option_indices[idx]];
+    snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[idx], val, LV_SYMBOL_RIGHT);
+    lv_obj_t *label = lv_obj_get_child(btn, 0);
+    lv_label_set_text(label, buf);
+    lv_obj_set_width(label, lv_obj_get_width(btn));
+    lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+}
+
+static void back_button_cb(lv_event_t *e) {
+    display_manager_switch_view(&main_menu_view);
+}
+
+static void event_handler(InputEvent *ev) {
+    if (ev->type == INPUT_TYPE_TOUCH) {
+        lv_indev_data_t *data = &ev->data.touch_data;
+        if (data->state == LV_INDEV_STATE_PR) {
+            touch_started = true;
+            touch_start_x = data->point.x;
+            touch_start_y = data->point.y;
+        } else if (data->state == LV_INDEV_STATE_REL && touch_started) {
+            int x = data->point.x;
+            int y = data->point.y;
+            touch_started = false;
+            lv_area_t area;
+            for (int i = 0; i < 2; i++) {
+                if (setting_btns[i]) {
+                    lv_obj_get_coords(setting_btns[i], &area);
+                    if (x >= area.x1 && x <= area.x2 && y >= area.y1 && y <= area.y2) {
+                        int mid_x = (area.x1 + area.x2) / 2;
+                        bool inc = (x >= mid_x);
+                        change_setting(i, inc);
+                        return;
+                    }
+                }
+            }
+            if (scroll_up_btn) {
+                lv_obj_get_coords(scroll_up_btn, &area);
+                if (x >= area.x1 && x <= area.x2 && y >= area.y1 && y <= area.y2) {
+                    lv_event_send(scroll_up_btn, LV_EVENT_CLICKED, NULL);
+                    return;
+                }
+            }
+            if (scroll_down_btn) {
+                lv_obj_get_coords(scroll_down_btn, &area);
+                if (x >= area.x1 && x <= area.x2 && y >= area.y1 && y <= area.y2) {
+                    lv_event_send(scroll_down_btn, LV_EVENT_CLICKED, NULL);
+                    return;
+                }
+            }
+            if (back_btn) {
+                lv_obj_get_coords(back_btn, &area);
+                if (x >= area.x1 && x <= area.x2 && y >= area.y1 && y <= area.y2) {
+                    lv_event_send(back_btn, LV_EVENT_CLICKED, NULL);
+                    return;
+                }
+            }
+        }
+    } else if (ev->type == INPUT_TYPE_JOYSTICK) {
+        int b = ev->data.joystick_index;
+        if (b == 0) {
+            // Left hardware button -> decrement first setting
+            lv_event_send(setting_btns[0], LV_EVENT_CLICKED, NULL);
+        } else if (b == 3) {
+            // Right hardware button -> increment first setting
+            lv_event_send(setting_btns[0], LV_EVENT_CLICKED, NULL);
+        } else if (b == 1) {
+            // Toggle setting selection -> move to next setting
+            // No-op or could implement selection indicator
+        } else if (b == 2) {
+            lv_event_send(back_btn, LV_EVENT_CLICKED, NULL);
+        }
+    }
+}
+
+void settings_screen_create(void) {
+    uint32_t dt = settings_get_display_timeout(&G_Settings);
+    current_option_indices[0] = dt < 7500 ? 0 : dt < 15000 ? 1 : dt < 45000 ? 2 : 3;
+    current_option_indices[1] = settings_get_rgb_mode(&G_Settings);
+
+    display_manager_fill_screen(lv_color_hex(0x121212));
+    root_container = lv_obj_create(lv_scr_act());
+    settings_screen_view.root = root_container;
+    lv_obj_set_size(root_container, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(root_container, lv_color_hex(0x121212), 0);
+    lv_obj_set_style_bg_opa(root_container, LV_OPA_COVER, 0);
+    lv_obj_align(root_container, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_clear_flag(root_container, LV_OBJ_FLAG_SCROLLABLE);
+    lv_obj_set_style_border_width(root_container, 0, 0);
+    lv_obj_set_style_pad_all(root_container, 0, 0);
+    lv_obj_set_scrollbar_mode(root_container, LV_SCROLLBAR_MODE_OFF);
+
+    int screen_w = LV_HOR_RES;
+    int screen_h = LV_VER_RES;
+    bool is_small = (screen_w <= 240 || screen_h <= 240);
+    int button_height = is_small ? 40 : 60;
+    const int STATUS_BAR_H = 20;
+    const int BUTTON_AREA_HEIGHT = SCROLL_BTN_SIZE + SCROLL_BTN_PADDING * 2;
+    int list_h = screen_h - STATUS_BAR_H - BUTTON_AREA_HEIGHT;
+
+    menu_container = lv_list_create(root_container);
+    lv_obj_set_size(menu_container, screen_w, list_h);
+    lv_obj_align(menu_container, LV_ALIGN_TOP_MID, 0, STATUS_BAR_H);
+    lv_obj_set_style_bg_color(menu_container, lv_color_hex(0x121212), 0);
+    lv_obj_set_style_pad_all(menu_container, 0, 0);
+    lv_obj_set_style_border_width(menu_container, 0, 0);
+    lv_obj_set_scrollbar_mode(menu_container, LV_SCROLLBAR_MODE_OFF);
+
+    for (int i = 0; i < 2; i++) {
+        char buf[64];
+        const char *val = i == 0 ? timeout_options[current_option_indices[i]] : rgb_options[current_option_indices[i]];
+        snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[i], val, LV_SYMBOL_RIGHT);
+        setting_btns[i] = lv_list_add_btn(menu_container, NULL, buf);
+        lv_obj_set_height(setting_btns[i], button_height);
+        lv_obj_set_style_bg_color(setting_btns[i], lv_color_hex(0x1E1E1E), LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_opa(setting_btns[i], LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_border_width(setting_btns[i], 0, LV_PART_MAIN);
+        lv_obj_set_style_radius(setting_btns[i], 0, LV_PART_MAIN);
+        lv_obj_set_style_pad_top(setting_btns[i], SCROLL_BTN_PADDING * 2, LV_PART_MAIN);
+        lv_obj_set_style_pad_bottom(setting_btns[i], SCROLL_BTN_PADDING * 2, LV_PART_MAIN);
+        lv_obj_t *label = lv_obj_get_child(setting_btns[i], 0);
+        lv_obj_set_style_text_font(label, is_small ? &lv_font_montserrat_14 : &lv_font_montserrat_16, 0);
+        lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
+        lv_obj_set_width(label, lv_obj_get_width(setting_btns[i]));
+        lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+        lv_obj_set_user_data(setting_btns[i], (void *)(intptr_t)i);
+        lv_obj_add_event_cb(setting_btns[i], setting_row_cb, LV_EVENT_CLICKED, NULL);
+    }
+
+    // Scroll up
+    scroll_up_btn = lv_btn_create(root_container);
+    lv_obj_set_size(scroll_up_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
+    lv_obj_align(scroll_up_btn, LV_ALIGN_BOTTOM_RIGHT, -SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING);
+    lv_obj_set_style_bg_color(scroll_up_btn, lv_color_hex(0x333333), LV_PART_MAIN);
+    lv_obj_set_style_radius(scroll_up_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_set_style_border_width(scroll_up_btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(scroll_up_btn, 0, LV_PART_MAIN);
+    lv_obj_add_event_cb(scroll_up_btn, scroll_up_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *ul = lv_label_create(scroll_up_btn);
+    lv_label_set_text(ul, LV_SYMBOL_UP);
+    lv_obj_center(ul);
+
+    // Scroll down
+    scroll_down_btn = lv_btn_create(root_container);
+    lv_obj_set_size(scroll_down_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
+    lv_obj_align(scroll_down_btn, LV_ALIGN_BOTTOM_LEFT, SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING);
+    lv_obj_set_style_bg_color(scroll_down_btn, lv_color_hex(0x333333), LV_PART_MAIN);
+    lv_obj_set_style_radius(scroll_down_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
+    lv_obj_set_style_border_width(scroll_down_btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(scroll_down_btn, 0, LV_PART_MAIN);
+    lv_obj_add_event_cb(scroll_down_btn, scroll_down_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *dl = lv_label_create(scroll_down_btn);
+    lv_label_set_text(dl, LV_SYMBOL_DOWN);
+    lv_obj_center(dl);
+
+    // Back button
+    back_btn = lv_btn_create(root_container);
+    lv_obj_set_size(back_btn, SCROLL_BTN_SIZE + 20, SCROLL_BTN_SIZE);
+    lv_obj_align(back_btn, LV_ALIGN_BOTTOM_MID, 0, -SCROLL_BTN_PADDING);
+    lv_obj_set_style_bg_color(back_btn, lv_color_hex(0x555555), LV_PART_MAIN);
+    lv_obj_set_style_radius(back_btn, 5, LV_PART_MAIN);
+    lv_obj_set_style_pad_hor(back_btn, 10, LV_PART_MAIN);
+    lv_obj_set_style_border_width(back_btn, 0, LV_PART_MAIN);
+    lv_obj_set_style_shadow_width(back_btn, 0, LV_PART_MAIN);
+    lv_obj_add_event_cb(back_btn, back_button_cb, LV_EVENT_CLICKED, NULL);
+    lv_obj_t *bl = lv_label_create(back_btn);
+    lv_label_set_text(bl, LV_SYMBOL_LEFT " Back");
+    lv_obj_center(bl);
+
+    display_manager_add_status_bar("Settings");
+}
+
+void settings_screen_destroy(void) {
+    if (settings_screen_view.root) {
+        lv_obj_clean(settings_screen_view.root);
+        lv_obj_del(settings_screen_view.root);
+        settings_screen_view.root = NULL;
+        scroll_up_btn = NULL;
+        scroll_down_btn = NULL;
+        back_btn = NULL;
+    }
+}
+
+void get_settings_screen_callback(void **cb) {
+    *cb = event_handler;
+}
+
+View settings_screen_view = {
+    .root = NULL,
+    .create = settings_screen_create,
+    .destroy = settings_screen_destroy,
+    .input_callback = event_handler,
+    .name = "Settings",
+    .get_hardwareinput_callback = get_settings_screen_callback
+}; 

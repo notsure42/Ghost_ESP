@@ -20,7 +20,8 @@
   - Add vertical swipe navigation for scrolling of menu items (requires a capacitive touch screen)
   - Added station scanning and the new station options to the wifi options screen
   - Added simple digital clock view
-
+  - Settings menu
+  
 ### Changed
 
 - Attacks

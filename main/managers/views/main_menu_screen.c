@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "managers/views/clock_screen.h"
+#include "managers/views/settings_screen.h"
 
 static const char *TAG = "MainMenu";
 
@@ -29,7 +30,8 @@ static menu_item_t menu_items[] = {
     {"WiFi", &wifi},
     {"GPS", &Map},
     {"Apps", &GESPAppGallery},
-    {"Clock", &clock_icon}
+    {"Clock", &clock_icon},
+    {"Settings", &settings_icon}
 };
 
 static int num_items = sizeof(menu_items) / sizeof(menu_items[0]);
@@ -42,6 +44,7 @@ static void init_menu_colors(void) {
     menu_items[2].border_color = lv_color_hex(0x388E3C);
     menu_items[3].border_color = lv_color_hex(0x7B1FA2);
     menu_items[4].border_color = lv_color_hex(0x000000);
+    menu_items[5].border_color = lv_color_hex(0xFF9800);
 }
 
 // Animation callback wrapper
@@ -183,6 +186,7 @@ static void handle_menu_item_selection(int item_index) {
         case 2: printf("GPS selected\n"); SelectedMenuType = OT_GPS; display_manager_switch_view(&options_menu_view); break;
         case 3: printf("Apps View Selected\n"); display_manager_switch_view(&apps_menu_view); break;
         case 4: printf("Clock selected\n"); display_manager_switch_view(&clock_view); break;
+        case 5: printf("Settings selected\n"); display_manager_switch_view(&settings_screen_view); break;
         default: printf("Unknown menu item selected\n"); break;
     }
 }
