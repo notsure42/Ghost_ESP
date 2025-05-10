@@ -9,6 +9,7 @@
 #include "managers/views/terminal_screen.h"
 #include "managers/views/number_pad_screen.h"
 #include "managers/wifi_manager.h"
+#include "managers/settings_manager.h"
 #include <stdio.h>
 
 EOptionsMenuType SelectedMenuType = OT_Wifi;
@@ -320,6 +321,19 @@ void handle_hardware_button_press_options(InputEvent *event) {
             int dx = data->point.x - opt_touch_start_x;
             int dy = data->point.y - opt_touch_start_y;
             opt_touch_started = false;
+            if (settings_get_thirds_control_enabled(&G_Settings)) {
+                int y = data->point.y;
+                int screen_h = LV_VER_RES;
+                if (y < screen_h/3) {
+                    select_option_item(selected_item_index - 1);
+                } else if (y > (screen_h * 2)/3) {
+                    select_option_item(selected_item_index + 1);
+                } else {
+                    lv_obj_t *selected = lv_obj_get_child(menu_container, selected_item_index);
+                    if (selected) handle_option_directly((const char *)lv_obj_get_user_data(selected));
+                }
+                return;
+            }
             // Define thresholds
             int threshold_y = LV_VER_RES / OPT_SWIPE_THRESHOLD_RATIO;
             int threshold_x = LV_HOR_RES / OPT_SWIPE_THRESHOLD_RATIO;

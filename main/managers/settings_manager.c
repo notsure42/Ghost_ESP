@@ -43,6 +43,7 @@ static const char *NVS_RGB_DATA_PIN_KEY = "rgb_data_pin";
 static const char *NVS_RGB_RED_PIN_KEY = "rgb_red_pin";
 static const char *NVS_RGB_GREEN_PIN_KEY = "rgb_green_pin";
 static const char *NVS_RGB_BLUE_PIN_KEY = "rgb_blue_pin";
+static const char *NVS_THIRD_CTRL_KEY = "third_ctrl";
 
 static const char *TAG = "SettingsManager";
 
@@ -113,6 +114,7 @@ void settings_set_defaults(FSettings *settings) {
   settings->rgb_red_pin = -1;
   settings->rgb_green_pin = -1;
   settings->rgb_blue_pin = -1;
+  settings->third_control_enabled = false;
 }
 
 void settings_load(FSettings *settings) {
@@ -276,6 +278,14 @@ void settings_load(FSettings *settings) {
     settings->rts_enabled = false;
   }
 
+  uint8_t thirdenabledvalue;
+  err = nvs_get_u8(nvsHandle, NVS_THIRD_CTRL_KEY, &thirdenabledvalue);
+  if (err == ESP_OK) {
+    settings->third_control_enabled = thirdenabledvalue;
+  } else {
+    settings->third_control_enabled = false;
+  }
+
   // Load Station SSID
   str_size = sizeof(settings->sta_ssid);
   err = nvs_get_str(nvsHandle, NVS_STA_SSID_KEY, settings->sta_ssid, &str_size);
@@ -392,6 +402,12 @@ void settings_save(const FSettings *settings) {
   err = nvs_set_u8(nvsHandle, NVS_ENABLE_RTS_KEY, settings->rts_enabled);
   if (err != ESP_OK) {
     printf("Failed to save RTS Enabled\n");
+  }
+
+  // Save Third Control Enabled
+  err = nvs_set_u8(nvsHandle, NVS_THIRD_CTRL_KEY, settings->third_control_enabled);
+  if (err != ESP_OK) {
+    printf("Failed to save Third Control Enabled\n");
   }
 
   // Save Evil Portal settings
@@ -791,4 +807,12 @@ void settings_get_rgb_separate_pins(const FSettings *settings, int32_t *red, int
   if (red) *red = settings->rgb_red_pin;
   if (green) *green = settings->rgb_green_pin;
   if (blue) *blue = settings->rgb_blue_pin;
+}
+
+void settings_set_thirds_control_enabled(FSettings *settings, bool enabled) {
+  settings->third_control_enabled = enabled;
+}
+
+bool settings_get_thirds_control_enabled(const FSettings *settings) {
+  return settings->third_control_enabled;
 }
