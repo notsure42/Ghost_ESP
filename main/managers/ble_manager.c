@@ -568,7 +568,7 @@ void ble_start_spoofing_selected_airtag(void) {
         if (field_type == 0xFF && field_len >= 3) { // Manufacturer Specific Data
             mfg_data_start = &tag_to_spoof->payload[current_index + 2];
             mfg_data_len = field_len - 1;
-            break;
+                break;
         }
         current_index += field_len + 1;
     }
@@ -579,9 +579,9 @@ void ble_start_spoofing_selected_airtag(void) {
             fields.mfg_data_len = tag_to_spoof->payload_len - 2;
             printf("Warning: Using raw payload data for advertisement.\n");
             TERMINAL_VIEW_ADD_TEXT("Warn: Using raw payload for adv.\n");
-        } else {
-            return; // No data to advertise
-        }
+         } else {
+             return; // No data to advertise
+         }
     } else {
          fields.mfg_data = mfg_data_start;
          fields.mfg_data_len = mfg_data_len;

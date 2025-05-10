@@ -39,7 +39,8 @@
   - Changed bootup icon
   - Removed default shadow/border from back buttons
   - Changed option menu item color to be black and white
-
+  - Added text to the splash screen and removed animation
+  
 - Commands
   - List stations with sanitized ascii and numeric index
   - Label APs with blank SSID fields as "Hidden"
