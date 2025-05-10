@@ -144,6 +144,7 @@ void options_menu_create() {
     int container_height = screen_height - STATUS_BAR_HEIGHT - BUTTON_AREA_HEIGHT;
 
     menu_container = lv_list_create(root);
+    lv_obj_set_style_radius(menu_container, 0, LV_PART_MAIN);
     // Adjust size and position
     lv_obj_set_size(menu_container, screen_width, container_height); 
     lv_obj_align(menu_container, LV_ALIGN_TOP_MID, 0, STATUS_BAR_HEIGHT); 
@@ -251,6 +252,7 @@ static void select_option_item(int index) {
             lv_obj_set_style_bg_color(previous_item, lv_color_hex(0x1E1E1E), LV_PART_MAIN);
             lv_obj_set_style_bg_grad_color(previous_item, lv_color_hex(0x1E1E1E), LV_PART_MAIN);
             lv_obj_set_style_bg_grad_dir(previous_item, LV_GRAD_DIR_NONE, LV_PART_MAIN);
+            lv_obj_set_style_radius(previous_item, 0, LV_PART_MAIN);
             lv_obj_t *prev_label = lv_obj_get_child(previous_item, 0);
             if(prev_label) lv_obj_set_style_text_color(prev_label, lv_color_hex(0xFFFFFF), 0);
         }
@@ -262,6 +264,7 @@ static void select_option_item(int index) {
         lv_obj_set_style_bg_grad_color(current_item, lv_color_hex(0xFFFFFF), LV_PART_MAIN);
         lv_obj_set_style_bg_grad_dir(current_item, LV_GRAD_DIR_NONE, LV_PART_MAIN);
         lv_obj_set_style_bg_opa(current_item, LV_OPA_COVER, LV_PART_MAIN);
+        lv_obj_set_style_radius(current_item, 0, LV_PART_MAIN);
         lv_obj_t *label = lv_obj_get_child(current_item, 0);
         if(label) lv_obj_set_style_text_color(label, lv_color_hex(0x000000), 0);
         lv_obj_scroll_to_view(current_item, LV_ANIM_OFF);
