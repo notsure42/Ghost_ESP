@@ -46,13 +46,13 @@ static void back_event_cb(lv_event_t *e); // Forward Declaration for back button
 static void scroll_options_up(lv_event_t *e) {
     if (!menu_container) return;
     lv_coord_t scroll_amt = lv_obj_get_height(menu_container) / 2;
-    lv_obj_scroll_by_bounded(menu_container, 0, -scroll_amt, LV_ANIM_OFF);
+    lv_obj_scroll_by_bounded(menu_container, 0, scroll_amt, LV_ANIM_OFF);
 }
 
 static void scroll_options_down(lv_event_t *e) {
     if (!menu_container) return;
     lv_coord_t scroll_amt = lv_obj_get_height(menu_container) / 2;
-    lv_obj_scroll_by_bounded(menu_container, 0, scroll_amt, LV_ANIM_OFF);
+    lv_obj_scroll_by_bounded(menu_container, 0, -scroll_amt, LV_ANIM_OFF);
 }
 
 const char *options_menu_type_to_string(EOptionsMenuType menuType) {
@@ -192,9 +192,9 @@ void options_menu_create() {
     display_manager_add_status_bar(options_menu_type_to_string(SelectedMenuType));
 
     // Create scroll buttons and back button
-    scroll_up_btn = lv_btn_create(root); // UP button now on the RIGHT
+    scroll_up_btn = lv_btn_create(root); // UP button on the LEFT
     lv_obj_set_size(scroll_up_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
-    lv_obj_align(scroll_up_btn, LV_ALIGN_BOTTOM_RIGHT, -SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align right
+    lv_obj_align(scroll_up_btn, LV_ALIGN_BOTTOM_LEFT, SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align left
     lv_obj_set_style_bg_color(scroll_up_btn, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_set_style_radius(scroll_up_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
     lv_obj_set_style_border_width(scroll_up_btn, 0, LV_PART_MAIN);
@@ -204,9 +204,9 @@ void options_menu_create() {
     lv_label_set_text(up_label, LV_SYMBOL_UP); // Keep UP symbol
     lv_obj_center(up_label);
 
-    scroll_down_btn = lv_btn_create(root); // DOWN button now on the LEFT
+    scroll_down_btn = lv_btn_create(root); // DOWN button on the RIGHT
     lv_obj_set_size(scroll_down_btn, SCROLL_BTN_SIZE, SCROLL_BTN_SIZE);
-    lv_obj_align(scroll_down_btn, LV_ALIGN_BOTTOM_LEFT, SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align left
+    lv_obj_align(scroll_down_btn, LV_ALIGN_BOTTOM_RIGHT, -SCROLL_BTN_PADDING, -SCROLL_BTN_PADDING); // Align right
     lv_obj_set_style_bg_color(scroll_down_btn, lv_color_hex(0x333333), LV_PART_MAIN);
     lv_obj_set_style_radius(scroll_down_btn, LV_RADIUS_CIRCLE, LV_PART_MAIN);
     lv_obj_set_style_border_width(scroll_down_btn, 0, LV_PART_MAIN);
