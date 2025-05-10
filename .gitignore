@@ -17,3 +17,4 @@ banned_words.json
 sdkconfig.old
 dependencies.lock
 dependencies.lock
+sdkconfig.default
