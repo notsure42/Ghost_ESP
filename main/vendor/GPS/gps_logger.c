@@ -79,6 +79,8 @@ esp_err_t csv_file_open(const char *base_file_name) {
     if (sd_card_exists("/mnt/ghostesp/gps")) {
         get_next_csv_file_name(file_name, base_file_name);
         csv_file = fopen(file_name, "w");
+    } else {
+        csv_file = NULL;
     }
 
     esp_err_t ret = csv_write_header(csv_file);
@@ -90,8 +92,13 @@ esp_err_t csv_file_open(const char *base_file_name) {
         return ret;
     }
 
-    printf("Streaming CSV buffer over UART\n");
-    TERMINAL_VIEW_ADD_TEXT("Streaming CSV buffer over UART\n");
+    if (csv_file) {
+        printf("Streaming CSV buffer to SD card\n");
+        TERMINAL_VIEW_ADD_TEXT("Streaming CSV buffer to SD card\n");
+    } else {
+        printf("Streaming CSV buffer over UART\n");
+        TERMINAL_VIEW_ADD_TEXT("Streaming CSV buffer over UART\n");
+    }
     return ESP_OK;
 }
 

@@ -76,7 +76,7 @@
 - GPS
   - Initialize GPS quality data and zero-init wardriving entries to prevent crash in wardriving mode
   - Don't check for csv file before flushing buffer over UART
-  
+  - Actually open a CSV file for wardriving when an SD card is present
 
 ## Revival v1.4.9
 
