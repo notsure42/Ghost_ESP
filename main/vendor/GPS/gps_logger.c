@@ -90,8 +90,8 @@ esp_err_t csv_file_open(const char *base_file_name) {
         return ret;
     }
 
-    printf("Storage: Created new log file: %s\n", file_name);
-    TERMINAL_VIEW_ADD_TEXT("Storage: Created new log file: %s\n", file_name);
+    printf("Streaming CSV buffer over UART\n");
+    TERMINAL_VIEW_ADD_TEXT("Streaming CSV buffer over UART\n");
     return ESP_OK;
 }
 
@@ -143,7 +143,7 @@ esp_err_t csv_write_data_to_buffer(wardriving_data_t *data) {
     }
 
     // Check if buffer needs flushing
-    if (buffer_offset + len >= BUFFER_SIZE && csv_file != NULL) {
+    if (buffer_offset + len >= BUFFER_SIZE) {
         esp_err_t err = csv_flush_buffer_to_file();
         if (err != ESP_OK) {
             return err;
@@ -173,8 +173,8 @@ esp_err_t csv_flush_buffer_to_file() {
     }
 
     if (csv_file == NULL) {
-        printf("Storage:\nStarting new file.\n");
-        TERMINAL_VIEW_ADD_TEXT("Storage:\nStarting new file.\n");
+        printf("Streaming CSV buffer over UART\n");
+        TERMINAL_VIEW_ADD_TEXT("Streaming CSV buffer over UART\n");
         const char *mark_begin = "[BUF/BEGIN]";
         const char *mark_close = "[BUF/CLOSE]";
 
