@@ -789,10 +789,19 @@ void handle_startwd(int argc, char **argv) {
     if (stop_flag) {
         gps_manager_deinit(&g_gpsManager);
         wifi_manager_stop_monitor_mode();
+        csv_flush_buffer_to_file();
+        csv_file_close();
         printf("Wardriving stopped.\n");
         TERMINAL_VIEW_ADD_TEXT("Wardriving stopped.\n");
     } else {
         gps_manager_init(&g_gpsManager);
+        if (sd_card_exists("/mnt/ghostesp/gps")) {
+            esp_err_t err = csv_file_open("wardriving");
+            if (err != ESP_OK) {
+                printf("Failed to open CSV for wardriving\n");
+                TERMINAL_VIEW_ADD_TEXT("Failed to open CSV for wardriving\n");
+            }
+        }
         wifi_manager_start_monitor_mode(wardriving_scan_callback);
         printf("Wardriving started.\n");
         TERMINAL_VIEW_ADD_TEXT("Wardriving started.\n");
