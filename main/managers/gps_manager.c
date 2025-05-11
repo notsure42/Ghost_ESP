@@ -208,6 +208,9 @@ esp_err_t gps_manager_log_wardriving_data(wardriving_data_t *data) {
     data->altitude = gps->altitude;
     data->accuracy = gps->dop_h * 5.0;
 
+    // Initialize GPS quality data to avoid uninitialized fields
+    populate_gps_quality_data(data, gps);
+
     // First, validate the current GPS date
     if (!is_valid_date(&gps->date)) {
         // Only show warning if we have a truly valid fix

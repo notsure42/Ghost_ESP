@@ -73,6 +73,9 @@
 - RGB
   - Persist RGB pin settings to NVS and auto-init from saved config, closes [jaylikesbunda/Ghost_ESP#5](https://github.com/jaylikesbunda/Ghost_ESP/issues/5)
 
+- GPS
+  - Initialize GPS quality data and zero-init wardriving entries to prevent crash in wardriving mode
+
 ## Revival v1.4.9
 
 ### ❤️ New Stuff
