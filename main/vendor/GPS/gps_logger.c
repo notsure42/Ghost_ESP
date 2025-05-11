@@ -115,7 +115,7 @@ esp_err_t csv_write_data_to_buffer(wardriving_data_t *data) {
              gps_get_absolute_year(gps->date.year), gps->date.month, gps->date.day, gps->tim.hour,
              gps->tim.minute, gps->tim.second, gps->tim.thousand);
 
-    char data_line[CSV_BUFFER_SIZE];
+    static char data_line[CSV_BUFFER_SIZE];
     int len;
 
     if (data->ble_data.is_ble_device) {
