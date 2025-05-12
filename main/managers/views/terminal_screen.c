@@ -10,6 +10,7 @@
 #include <string.h>
 
 #include "lvgl.h"
+#include "managers/settings_manager.h"
 
 static const char *TAG = "Terminal";
 static lv_obj_t *terminal_page = NULL;
@@ -78,7 +79,7 @@ static void process_queued_messages(void) {
     lv_obj_t *item = lv_list_add_text(terminal_page, msg);
     lv_label_set_long_mode(item, LV_LABEL_LONG_WRAP);
     lv_obj_set_style_bg_opa(item, LV_OPA_TRANSP, 0);
-    lv_obj_set_style_text_color(item, lv_color_hex(0x00FF00), 0);
+    lv_obj_set_style_text_color(item, lv_color_hex(settings_get_terminal_text_color(&G_Settings)), 0);
     lv_obj_set_style_text_font(item, &lv_font_montserrat_10, 0);
     last_item = item; // Keep track of the last added item
 

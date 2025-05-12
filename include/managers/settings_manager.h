@@ -84,6 +84,7 @@ typedef struct {
   int32_t rgb_green_pin; // Separate-pin RGB: green pin, -1 if not used
   int32_t rgb_blue_pin;  // Separate-pin RGB: blue pin, -1 if not used
   bool third_control_enabled;  // Enable third-screen tap control
+  uint32_t terminal_text_color; // Terminal text color in 0xRRGGBB
   uint8_t menu_theme;  // Theme for main menu colors (0=Default)
 } FSettings;
 
@@ -180,6 +181,9 @@ bool settings_get_thirds_control_enabled(const FSettings *settings);
 
 void settings_set_menu_theme(FSettings *settings, uint8_t theme);
 uint8_t settings_get_menu_theme(const FSettings *settings);
+
+void settings_set_terminal_text_color(FSettings *settings, uint32_t color);
+uint32_t settings_get_terminal_text_color(const FSettings *settings);
 
 static nvs_handle_t nvsHandle;
 

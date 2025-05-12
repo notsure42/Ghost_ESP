@@ -45,6 +45,7 @@ static const char *NVS_RGB_GREEN_PIN_KEY = "rgb_green_pin";
 static const char *NVS_RGB_BLUE_PIN_KEY = "rgb_blue_pin";
 static const char *NVS_THIRD_CTRL_KEY = "third_ctrl";
 static const char *NVS_MENU_THEME_KEY = "menu_theme";
+static const char *NVS_TERMINAL_TEXT_COLOR_KEY = "term_color";
 
 static const char *TAG = "SettingsManager";
 
@@ -117,12 +118,14 @@ void settings_set_defaults(FSettings *settings) {
   settings->rgb_green_pin = -1;
   settings->rgb_blue_pin = -1;
   settings->third_control_enabled = false;
+  settings->terminal_text_color = 0x00FF00;
 }
 
 void settings_load(FSettings *settings) {
   esp_err_t err;
   uint8_t value_u8;
   uint16_t value_u16;
+  uint32_t value_u32;
   float value_float;
   size_t str_size;
 
@@ -335,6 +338,8 @@ void settings_load(FSettings *settings) {
 
   err = nvs_get_u8(nvsHandle, NVS_MENU_THEME_KEY, &value_u8);
   if (err == ESP_OK) settings->menu_theme = value_u8;
+  err = nvs_get_u32(nvsHandle, NVS_TERMINAL_TEXT_COLOR_KEY, &value_u32);
+  if (err == ESP_OK) settings->terminal_text_color = value_u32;
 }
 
 static void update_rainbow_effect(const FSettings *settings) {
@@ -575,7 +580,8 @@ void settings_save(const FSettings *settings) {
 
   err = nvs_set_u8(nvsHandle, NVS_MENU_THEME_KEY, settings->menu_theme);
   if (err != ESP_OK) ESP_LOGE(S_TAG, "Failed to save menu_theme: %s", esp_err_to_name(err));
-
+  err = nvs_set_u32(nvsHandle, NVS_TERMINAL_TEXT_COLOR_KEY, settings->terminal_text_color);
+  if (err != ESP_OK) ESP_LOGE(S_TAG, "Failed to save terminal_text_color: %s", esp_err_to_name(err));
   err = nvs_commit(nvsHandle);
   if (err != ESP_OK) ESP_LOGE(S_TAG, "Failed to commit settings: %s", esp_err_to_name(err));
 }
@@ -834,4 +840,12 @@ void settings_set_menu_theme(FSettings *settings, uint8_t theme) {
 
 uint8_t settings_get_menu_theme(const FSettings *settings) {
   return settings->menu_theme;
+}
+
+void settings_set_terminal_text_color(FSettings *settings, uint32_t color) {
+  settings->terminal_text_color = color;
+}
+
+uint32_t settings_get_terminal_text_color(const FSettings *settings) {
+  return settings->terminal_text_color;
 }
