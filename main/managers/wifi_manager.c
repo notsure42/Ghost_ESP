@@ -3211,6 +3211,13 @@ static void dhcp_starve_display_task(void *param) {
 }
 
 void wifi_manager_start_dhcpstarve(int threads) {
+    // Prevent starting DHCP starvation when not associated to an AP
+    EventBits_t bits = xEventGroupGetBits(wifi_event_group);
+    if (!(bits & WIFI_CONNECTED_BIT)) {
+        printf("Not connected to an AP\n");
+        TERMINAL_VIEW_ADD_TEXT("Not connected to an AP\n");
+        return;
+    }
     if (dhcp_starve_running) {
         printf("DHCP-Starve already running\n");
         return;
