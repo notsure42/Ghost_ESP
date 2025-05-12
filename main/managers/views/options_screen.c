@@ -100,6 +100,7 @@ static const char *wifi_options[] = {"Scan Access Points",
                                      "Channel Congestion",
                                      "Start DHCP-Starve",
                                      "Stop DHCP-Starve",
+                                     "Connect to saved WiFi",
                                      "Go Back",
                                      NULL};
 
@@ -787,8 +788,14 @@ void option_event_cb(lv_event_t *e) {
         view_switched = true;
     }
 
+    else if (strcmp(Selected_Option, "Connect to saved WiFi") == 0) {
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("connect");
+        view_switched = true;
+    }
+
     else {
-        printf("Unhandled Option selected: %s\\n", Selected_Option);
+        printf("Unhandled Option selected: %s\n", Selected_Option);
         
     }
 
