@@ -22,7 +22,7 @@
   - Added station scanning and the new station options to the wifi options screen
   - Added simple digital clock view
   - Settings menu (with old screen controls as an option)
-  - Configurable main menu themes (10 different ones to choose from)
+  - Configurable main menu themes (15 different ones to choose from)
 
 ### Changed
 

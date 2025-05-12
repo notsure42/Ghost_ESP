@@ -20,7 +20,7 @@ static int touch_start_y;
 static const char *setting_labels[] = {"Display Timeout", "RGB Mode", "Menu Theme", "Old Controls"};
 static const char *timeout_options[] = {"5s", "10s", "30s", "60s"};
 static const char *rgb_options[] = {"Normal", "Rainbow"};
-static const char *theme_options[] = {"Default", "Pastel", "Dark", "Bright", "Solarized", "Monochrome", "Rose Red", "Purple", "Blue", "Orange"};
+static const char *theme_options[] = {"Default", "Pastel", "Dark", "Bright", "Solarized", "Monochrome", "Rose Red", "Purple", "Blue", "Orange", "Neon", "Cyberpunk", "Ocean", "Sunset", "Forest"};
 static const char *third_options[] = {"Off", "On"};
 
 static void scroll_up_cb(lv_event_t *e) {
