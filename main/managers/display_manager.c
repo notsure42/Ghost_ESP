@@ -258,6 +258,24 @@ static void status_update_cb(lv_timer_t *timer) {
 #endif
 }
 
+static const uint32_t theme_palettes[15][6] = {
+    {0x1976D2,0xD32F2F,0x388E3C,0x7B1FA2,0x000000,0xFF9800},
+    {0xFFCDD2,0xC8E6C9,0xB3E5FC,0xFFF9C4,0xD1C4E9,0xCFD8DC},
+    {0x263238,0x37474F,0x455A64,0x546E7A,0x263238,0x37474F},
+    {0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF},
+    {0x002B36,0x073642,0x586E75,0x839496,0xEEE8D5,0x002B36},
+    {0x888888,0x888888,0x888888,0x888888,0x888888,0x888888},
+    {0xE91E63,0xE91E63,0xE91E63,0xE91E63,0xE91E63,0xE91E63},
+    {0x9C27B0,0x9C27B0,0x9C27B0,0x9C27B0,0x9C27B0,0x9C27B0},
+    {0x2196F3,0x2196F3,0x2196F3,0x2196F3,0x2196F3,0x2196F3},
+    {0xFFA500,0xFFA500,0xFFA500,0xFFA500,0xFFA500,0xFFA500},
+    {0x39FF14,0xFF073A,0x0FF1CE,0xF8F32B,0xFF6EC7,0xFF8C00},
+    {0xFF00FF,0x00FFFF,0xFF0000,0x00FF00,0xFFFF00,0x800080},
+    {0x0077BE,0x00CED1,0x20B2AA,0x4682B4,0x5F9EA0,0x00008B},
+    {0xFF4500,0xFF8C00,0xFFD700,0xFF1493,0x8B008B,0x2E0854},
+    {0x556B2F,0x6B8E23,0x228B22,0x2E8B57,0x8FBC8F,0x8B4513}
+};
+
 void display_manager_add_status_bar(const char *CurrentMenuName) {
   status_bar = lv_obj_create(lv_scr_act());
   lv_obj_set_size(status_bar, LV_HOR_RES, 20);
@@ -266,9 +284,10 @@ void display_manager_add_status_bar(const char *CurrentMenuName) {
   lv_obj_set_scrollbar_mode(status_bar, LV_SCROLLBAR_MODE_OFF);
   lv_obj_set_style_border_side(status_bar, LV_BORDER_SIDE_BOTTOM, LV_PART_MAIN);
   lv_obj_set_style_border_width(status_bar, 1, LV_PART_MAIN);
-  lv_obj_set_style_border_color(
-      status_bar, hex_to_lv_color(settings_get_accent_color_str(&G_Settings)),
-      LV_PART_MAIN);
+  {
+    uint8_t theme = settings_get_menu_theme(&G_Settings);
+    lv_obj_set_style_border_color(status_bar, lv_color_hex(theme_palettes[theme][0]), LV_PART_MAIN);
+  }
   lv_obj_clear_flag(status_bar, LV_OBJ_FLAG_SCROLLABLE);
   lv_obj_set_style_radius(status_bar, 0, LV_PART_MAIN);
 
