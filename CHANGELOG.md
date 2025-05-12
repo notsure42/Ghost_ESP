@@ -46,6 +46,7 @@
   - List stations with sanitized ascii and numeric index
   - Label APs with blank SSID fields as "Hidden"
   - Make congestion command ASCII-only for compatibility
+  - Change display EP option to start default EP with a default SSID "FreeWiFi"
 
 - Power
   - Suspend LVGL, status bar update timer, and misc tasks when backlight is off

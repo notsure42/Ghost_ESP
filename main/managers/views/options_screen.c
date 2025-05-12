@@ -83,6 +83,7 @@ static const char *wifi_options[] = {"Scan Access Points",
                                      "Beacon Spam - Rickroll",
                                      "Beacon Spam - List",
                                      "Start Evil Portal",
+                                     "Stop Evil Portal",
                                      "Capture Probe",
                                      "Capture Deauth",
                                      "Capture Beacon",
@@ -531,7 +532,13 @@ void option_event_cb(lv_event_t *e) {
 
     else if (strcmp(Selected_Option, "Start Evil Portal") == 0) {
         display_manager_switch_view(&terminal_view);
-        simulateCommand("startportal");
+        simulateCommand("startportal default FreeWiFi");
+        view_switched = true;
+    }
+
+    else if (strcmp(Selected_Option, "Stop Evil Portal") == 0) {
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("stopportal");
         view_switched = true;
     }
 
