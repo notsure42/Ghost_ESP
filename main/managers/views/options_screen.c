@@ -289,7 +289,12 @@ static void select_option_item(int index) {
         lv_obj_set_style_bg_opa(current_item, LV_OPA_COVER, LV_PART_MAIN);
         lv_obj_set_style_radius(current_item, 0, LV_PART_MAIN);
         lv_obj_t *label = lv_obj_get_child(current_item, 0);
-        if(label) lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
+        if(label) {
+            if(theme == 3)
+                lv_obj_set_style_text_color(label, lv_color_hex(0x000000), 0);
+            else
+                lv_obj_set_style_text_color(label, lv_color_hex(0xFFFFFF), 0);
+        }
         lv_obj_scroll_to_view(current_item, LV_ANIM_OFF);
     } else {
         printf("Error: Current item not found for index %d\n", selected_item_index);
