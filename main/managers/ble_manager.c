@@ -589,7 +589,7 @@ void ble_start_spoofing_selected_airtag(void) {
 
 
     // Set the advertisement data
-    rc = ble_gap_adv_set_fields(&fields);
+    rc = ble_gap_adv_set_data(tag_to_spoof->payload, tag_to_spoof->payload_len);
     if (rc != 0) {
         ESP_LOGE(TAG_BLE, "Error setting advertisement data; rc=%d", rc);
         TERMINAL_VIEW_ADD_TEXT("Error setting adv data; rc=%d\n", rc);
