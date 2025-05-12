@@ -11,15 +11,16 @@ static lv_obj_t *menu_container;
 static lv_obj_t *scroll_up_btn;
 static lv_obj_t *scroll_down_btn;
 static lv_obj_t *back_btn;
-static lv_obj_t *setting_btns[3];
-static int current_option_indices[3];
+static lv_obj_t *setting_btns[4];
+static int current_option_indices[4];
 static bool touch_started = false;
 static int touch_start_x;
 static int touch_start_y;
 
-static const char *setting_labels[] = {"Display Timeout", "RGB Mode", "Old Controls"};
+static const char *setting_labels[] = {"Display Timeout", "RGB Mode", "Menu Theme", "Old Controls"};
 static const char *timeout_options[] = {"5s", "10s", "30s", "60s"};
 static const char *rgb_options[] = {"Normal", "Rainbow"};
+static const char *theme_options[] = {"Default", "Pastel", "Dark", "Bright", "Solarized", "Monochrome", "Rose Red", "Purple", "Blue", "Orange"};
 static const char *third_options[] = {"Off", "On"};
 
 static void scroll_up_cb(lv_event_t *e) {
@@ -36,8 +37,10 @@ static void scroll_down_cb(lv_event_t *e) {
 
 static void change_setting(int idx, bool inc) {
     int max;
-    if (idx == 0) max = 4;
-    else max = 2;
+    if (idx == 0) max = sizeof(timeout_options)/sizeof(timeout_options[0]);
+    else if (idx == 1) max = sizeof(rgb_options)/sizeof(rgb_options[0]);
+    else if (idx == 2) max = sizeof(theme_options)/sizeof(theme_options[0]);
+    else max = sizeof(third_options)/sizeof(third_options[0]);
     if (inc) {
         current_option_indices[idx] = (current_option_indices[idx] + 1) % max;
     } else {
@@ -50,6 +53,8 @@ static void change_setting(int idx, bool inc) {
         settings_set_display_timeout(&G_Settings, v);
     } else if (idx == 1) {
         settings_set_rgb_mode(&G_Settings, current_option_indices[idx]);
+    } else if (idx == 2) {
+        settings_set_menu_theme(&G_Settings, current_option_indices[idx]);
     } else {
         settings_set_thirds_control_enabled(&G_Settings, current_option_indices[idx] == 1);
     }
@@ -58,6 +63,7 @@ static void change_setting(int idx, bool inc) {
     const char *val;
     if (idx == 0) val = timeout_options[current_option_indices[idx]];
     else if (idx == 1) val = rgb_options[current_option_indices[idx]];
+    else if (idx == 2) val = theme_options[current_option_indices[idx]];
     else val = third_options[current_option_indices[idx]];
     snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[idx], val, LV_SYMBOL_RIGHT);
     lv_obj_t *btn = setting_btns[idx];
@@ -71,14 +77,18 @@ static void setting_row_cb(lv_event_t *e) {
     lv_obj_t *btn = lv_event_get_target(e);
     int idx = (int)(intptr_t)lv_obj_get_user_data(btn);
     int max;
-    if (idx == 0) max = 4;
-    else max = 2;
+    if (idx == 0) max = sizeof(timeout_options)/sizeof(timeout_options[0]);
+    else if (idx == 1) max = sizeof(rgb_options)/sizeof(rgb_options[0]);
+    else if (idx == 2) max = sizeof(theme_options)/sizeof(theme_options[0]);
+    else max = sizeof(third_options)/sizeof(third_options[0]);
     current_option_indices[idx] = (current_option_indices[idx] + 1) % max;
     if (idx == 0) {
         uint32_t v = current_option_indices[idx] == 0 ? 5000 : current_option_indices[idx] == 1 ? 10000 : current_option_indices[idx] == 2 ? 30000 : 60000;
         settings_set_display_timeout(&G_Settings, v);
     } else if (idx == 1) {
         settings_set_rgb_mode(&G_Settings, current_option_indices[idx]);
+    } else if (idx == 2) {
+        settings_set_menu_theme(&G_Settings, current_option_indices[idx]);
     } else {
         settings_set_thirds_control_enabled(&G_Settings, current_option_indices[idx] == 1);
     }
@@ -87,6 +97,7 @@ static void setting_row_cb(lv_event_t *e) {
     const char *val;
     if (idx == 0) val = timeout_options[current_option_indices[idx]];
     else if (idx == 1) val = rgb_options[current_option_indices[idx]];
+    else if (idx == 2) val = theme_options[current_option_indices[idx]];
     else val = third_options[current_option_indices[idx]];
     snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[idx], val, LV_SYMBOL_RIGHT);
     lv_obj_t *label = lv_obj_get_child(btn, 0);
@@ -111,7 +122,7 @@ static void event_handler(InputEvent *ev) {
             int y = data->point.y;
             touch_started = false;
             lv_area_t area;
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 4; i++) {
                 if (setting_btns[i]) {
                     lv_obj_get_coords(setting_btns[i], &area);
                     if (x >= area.x1 && x <= area.x2 && y >= area.y1 && y <= area.y2) {
@@ -165,7 +176,8 @@ void settings_screen_create(void) {
     uint32_t dt = settings_get_display_timeout(&G_Settings);
     current_option_indices[0] = dt < 7500 ? 0 : dt < 15000 ? 1 : dt < 45000 ? 2 : 3;
     current_option_indices[1] = settings_get_rgb_mode(&G_Settings);
-    current_option_indices[2] = settings_get_thirds_control_enabled(&G_Settings) ? 1 : 0;
+    current_option_indices[2] = settings_get_menu_theme(&G_Settings);
+    current_option_indices[3] = settings_get_thirds_control_enabled(&G_Settings) ? 1 : 0;
 
     display_manager_fill_screen(lv_color_hex(0x121212));
     root_container = lv_obj_create(lv_scr_act());
@@ -195,11 +207,12 @@ void settings_screen_create(void) {
     lv_obj_set_style_border_width(menu_container, 0, 0);
     lv_obj_set_scrollbar_mode(menu_container, LV_SCROLLBAR_MODE_OFF);
 
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         char buf[64];
         const char *val;
         if (i == 0) val = timeout_options[current_option_indices[i]];
         else if (i == 1) val = rgb_options[current_option_indices[i]];
+        else if (i == 2) val = theme_options[current_option_indices[i]];
         else val = third_options[current_option_indices[i]];
         snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[i], val, LV_SYMBOL_RIGHT);
         setting_btns[i] = lv_list_add_btn(menu_container, NULL, buf);

@@ -38,13 +38,22 @@ static int num_items = sizeof(menu_items) / sizeof(menu_items[0]);
 lv_obj_t *current_item_obj = NULL;
 
 static void init_menu_colors(void) {
-    // Initialize colors at runtime
-    menu_items[0].border_color = lv_color_hex(0x1976D2);
-    menu_items[1].border_color = lv_color_hex(0xD32F2F);
-    menu_items[2].border_color = lv_color_hex(0x388E3C);
-    menu_items[3].border_color = lv_color_hex(0x7B1FA2);
-    menu_items[4].border_color = lv_color_hex(0x000000);
-    menu_items[5].border_color = lv_color_hex(0xFF9800);
+    uint8_t theme = settings_get_menu_theme(&G_Settings);
+    const uint32_t palettes[10][6] = {
+        {0x1976D2,0xD32F2F,0x388E3C,0x7B1FA2,0x000000,0xFF9800},
+        {0xFFCDD2,0xC8E6C9,0xB3E5FC,0xFFF9C4,0xD1C4E9,0xCFD8DC},
+        {0x263238,0x37474F,0x455A64,0x546E7A,0x263238,0x37474F},
+        {0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF,0xFFFFFF},
+        {0x002B36,0x073642,0x586E75,0x839496,0xEEE8D5,0x002B36},
+        {0x888888,0x888888,0x888888,0x888888,0x888888,0x888888},
+        {0xE91E63,0xE91E63,0xE91E63,0xE91E63,0xE91E63,0xE91E63},
+        {0x9C27B0,0x9C27B0,0x9C27B0,0x9C27B0,0x9C27B0,0x9C27B0},
+        {0x2196F3,0x2196F3,0x2196F3,0x2196F3,0x2196F3,0x2196F3},
+        {0xFFA500,0xFFA500,0xFFA500,0xFFA500,0xFFA500,0xFFA500}
+    };
+    for (int i = 0; i < 6; i++) {
+        menu_items[i].border_color = lv_color_hex(palettes[theme][i]);
+    }
 }
 
 // Animation callback wrapper
