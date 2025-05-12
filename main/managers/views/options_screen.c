@@ -97,6 +97,8 @@ static const char *wifi_options[] = {"Scan Access Points",
                                      "Scan Open Ports",
                                      "Reset AP Credentials",
                                      "Channel Congestion",
+                                     "Start DHCP-Starve",
+                                     "Stop DHCP-Starve",
                                      "Go Back",
                                      NULL};
 
@@ -744,6 +746,18 @@ void option_event_cb(lv_event_t *e) {
     else if (strcmp(Selected_Option, "Channel Congestion") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("congestion");
+        view_switched = true;
+    }
+
+    else if (strcmp(Selected_Option, "Start DHCP-Starve") == 0) {
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("dhcpstarve start");
+        view_switched = true;
+    }
+
+    else if (strcmp(Selected_Option, "Stop DHCP-Starve") == 0) {
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("dhcpstarve stop");
         view_switched = true;
     }
 

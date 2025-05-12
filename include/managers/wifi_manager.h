@@ -268,4 +268,10 @@ void wifi_manager_clear_beacon_list(void);
 void wifi_manager_show_beacon_list(void);
 void wifi_manager_start_beacon_list(void);
 
+// Add DHCP starvation attack functions
+void wifi_manager_start_dhcpstarve(int threads);
+void wifi_manager_stop_dhcpstarve(void);
+void wifi_manager_dhcpstarve_display(void);
+void wifi_manager_dhcpstarve_help(void);
+
 #endif // WIFI_MANAGER_H

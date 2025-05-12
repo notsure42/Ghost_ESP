@@ -9,6 +9,7 @@
   - Added support for AirTag selection and spoofing
   - Added support for selecting and tracking Flipper Zero rssi
   - Custom beacon SSID list management and spam
+  - Added DHCP-Starve attack
   
 - Commands
   - Added station selection capability to existing select command
