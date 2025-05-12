@@ -44,6 +44,7 @@
 - Commands
   - List stations with sanitized ascii and numeric index
   - Label APs with blank SSID fields as "Hidden"
+  - Make congestion command ASCII-only for compatibility
 
 - Power
   - Suspend LVGL, status bar update timer, and misc tasks when backlight is off

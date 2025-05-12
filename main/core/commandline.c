@@ -1652,15 +1652,15 @@ void handle_congestion_cmd(int argc, char **argv) {
 
     printf("\nChannel Congestion:\n\n");
     TERMINAL_VIEW_ADD_TEXT("\nChannel Congestion:\n\n");
-    const char* header = "┌──┬───────┬────────────┐\n";
-    const char* separator = "├──┼───────┼────────────┤\n";
-    const char* row_format = "│%-2d│ %-5d │ %s │\n";
-    const char* footer = "└──┴───────┴────────────┘\n";
+    const char* header = "+----+-------+------------+\n";
+    const char* separator = "+----+-------+------------+\n";
+    const char* row_format = "| %2d | %5d | %s |\n";
+    const char* footer = "+----+-------+------------+\n";
 
     printf("%s", header);
     TERMINAL_VIEW_ADD_TEXT("%s", header);
-    printf("│CH│ Count │ Bar        │\n");
-    TERMINAL_VIEW_ADD_TEXT("│CH│ Count │ Bar        │\n");
+    printf("| CH | Count | Bar        |\n");
+    TERMINAL_VIEW_ADD_TEXT("| CH | Count | Bar        |\n");
     printf("%s", separator);
     TERMINAL_VIEW_ADD_TEXT("%s", separator);
 
@@ -1680,8 +1680,7 @@ void handle_congestion_cmd(int argc, char **argv) {
 
             // Add block characters
             for (int j = 0; j < bar_length; ++j) {
-                memcpy(ptr, "█", 3); // Copy 3 bytes for UTF-8 block
-                ptr += 3;
+                *ptr++ = '#';
             }
 
             // Add padding spaces to fill up to max_bar_length visual columns
