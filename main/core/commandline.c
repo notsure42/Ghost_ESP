@@ -279,6 +279,16 @@ void handle_stop_flipper(int argc, char **argv) {
 }
 
 void handle_dial_command(int argc, char **argv) {
+    // Usage: dial [device_name]
+    if (argc > 2) {
+        printf("Usage: %s [device_name]\n", argv[0]);
+        TERMINAL_VIEW_ADD_TEXT("Usage: %s [device_name]\n", argv[0]);
+        return;
+    }
+    // If a device name is provided, set it before discovery
+    if (argc == 2) {
+        dial_manager_set_device_name(argv[1]);
+    }
     xTaskCreate(&discover_task, "discover_task", 10240, NULL, 5, NULL);
 }
 

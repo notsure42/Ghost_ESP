@@ -6,17 +6,23 @@
 
 - Attacks
   - Deauthentication & DoS
+
     - Added support for direct station deauthentication
     - Added DHCP-Starve attack
+
   - Spoofing & Tracking
+
     - Added support for AirTag selection and spoofing
     - Added support for selecting and tracking Flipper Zero rssi
+
   - Beacon Management
+
     - Custom beacon SSID list management and spam
+
 - Commands
   - Added station selection capability to existing select command
   - Added a timezone command to set the timezone with a POSIX TZ string
-
+  - Enable passing custom DIAL device name via CLI argument
 - Display
   - Add back button to options screen bottom center to return to main menu
   - Added swipe handling for the main menu and app gallery views
@@ -34,11 +40,15 @@
   - If station data is available, directly deauth known stations of the AP selected for deauth
 
 - Display
+
   - Performance Optimizations
+
     - Refactored options screen to use lv_list instead of a custom flex container to improve performance
     - Replaced single lv_textarea in terminal view with scrollable lv_page and per-line lv_label children to improve performance
     - Optimize terminal screen by batching text additions
+
   - UI & UX Adjustments
+
     - Offset terminal page vertically by status bar height and adjust its height accordingly.
     - Remove index reset in main_menu_create to maintain selection across view switches
     - Default display timeout is now 30 seconds instead of 10
@@ -48,6 +58,7 @@
     - Removed default shadow/border from back buttons
     - Changed option menu item color to be black and white
     - Added text to the splash screen and removed animation
+
 - Commands
   - List stations with sanitized ascii and numeric index
   - Label APs with blank SSID fields as "Hidden"

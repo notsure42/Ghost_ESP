@@ -11,6 +11,16 @@
 
 static const char *TAG = "DIALManager";
 
+// Default name for DIAL device in bind session
+static char g_dial_device_name[64] = "Flipper_0";
+// Set the device name used in DIAL bind session
+void dial_manager_set_device_name(const char *name) {
+  if (name && *name) {
+    strncpy(g_dial_device_name, name, sizeof(g_dial_device_name) - 1);
+    g_dial_device_name[sizeof(g_dial_device_name) - 1] = '\0';
+  }
+}
+
 typedef struct {
   char *buffer;
   int buffer_len;
@@ -386,7 +396,7 @@ esp_err_t bind_session_id(Device *device) {
   char *encoded_loungeIdToken = url_encode(device->YoutubeToken);
   char *encoded_UUID = url_encode(device->UUID);
   char *encoded_zx = url_encode(zx);
-  char *encoded_name = url_encode("Flipper_0");
+  char *encoded_name = url_encode(g_dial_device_name);
 
   if (!encoded_loungeIdToken || !encoded_UUID || !encoded_zx || !encoded_name) {
     ESP_LOGE(TAG, "Failed to URL-encode parameters.");
