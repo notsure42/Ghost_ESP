@@ -27,8 +27,10 @@ jobs:
 
       - name: Install ESP-IDF v5.4.1
         run: |
-          git clone -b v5.4.1 --depth 1 --recursive https://github.com/espressif/esp-idf.git ~/esp-idf
-          ~/esp-idf/install.sh esp32c5 # Specify target
+          git clone -b v5.4.1 --recursive https://github.com/espressif/esp-idf.git ~/esp-idf
+          cd ~/esp-idf
+          git submodule update --init --recursive
+          ./install.sh esp32c5 # Specify target
 
       - name: Set up ESP-IDF Environment
         run: |
