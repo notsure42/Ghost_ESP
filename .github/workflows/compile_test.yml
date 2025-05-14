@@ -38,8 +38,6 @@ jobs:
           echo "Using IDF_TARGET: ${{ matrix.target.idf_target }}"
 
       - name: Clean and Build Project
-        env:
-          SDKCONFIG_DEFAULTS: "sdkconfig.defaults"
         run: |
           . ~/esp-idf/export.sh
           idf.py clean
@@ -73,4 +71,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: build_${{ matrix.target.name }} # Unique artifact name per build
-          path: ${{ matrix.target.zip_name }} 
+          path: ${{ matrix.target.zip_name }}
