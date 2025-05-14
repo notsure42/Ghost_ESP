@@ -80,7 +80,6 @@ void gps_manager_init(GPSManager *manager) {
 
         gpio_set_direction(current_rx_pin, GPIO_MODE_INPUT);
         gpio_set_pull_mode(current_rx_pin, GPIO_FLOATING);
-        PIN_FUNC_SELECT(GPIO_PIN_MUX_REG[current_rx_pin], UART_PIN_NO_CHANGE);
 
         config.uart.rx_pin = current_rx_pin;
         config.uart.uart_port = UART_NUM_1; // Explicitly set UART1 for GPS
