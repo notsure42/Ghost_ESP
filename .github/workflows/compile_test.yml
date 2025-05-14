@@ -40,6 +40,7 @@ jobs:
       - name: Clean and Build Project
         run: |
           . ~/esp-idf/export.sh
+          cp configs/sdkconfig.default.esp32c5 sdkconfig.defaults # Copy and rename the specific sdkconfig for esp32c5
           idf.py clean
           idf.py build || {
             echo "Build failed for ${{ matrix.target.name }}"
