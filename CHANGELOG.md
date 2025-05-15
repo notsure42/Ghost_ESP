@@ -23,6 +23,7 @@
   - Added station selection capability to existing select command
   - Added a timezone command to set the timezone with a POSIX TZ string
   - Enable passing custom DIAL device name via CLI argument
+
 - Display
   - Add back button to options screen bottom center to return to main menu
   - Added swipe handling for the main menu and app gallery views
@@ -33,6 +34,7 @@
   - Configurable main menu themes (15 different ones to choose from)
   - Added "Connect to saved WiFi" command
   - Configurable terminal text color
+  - Added "List APs" command
 
 ### Changed
 

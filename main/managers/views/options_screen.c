@@ -72,6 +72,7 @@ const char *options_menu_type_to_string(EOptionsMenuType menuType) {
 
 static const char *wifi_options[] = {"Scan Access Points",
                                      "Select AP",
+                                     "List Access Points",
                                      "Scan Stations",
                                      "List Stations",
                                      "Select Station",
@@ -440,6 +441,12 @@ void option_event_cb(lv_event_t *e) {
     if (strcmp(Selected_Option, "Scan Access Points") == 0) {
         display_manager_switch_view(&terminal_view);
         simulateCommand("scanap");
+        view_switched = true;
+    }
+
+    else if (strcmp(Selected_Option, "List Access Points") == 0) {
+        display_manager_switch_view(&terminal_view);
+        simulateCommand("list -a");
         view_switched = true;
     }
 
