@@ -4,6 +4,8 @@
 
 ### Added
 
+- Support for ESP32C5
+
 - Attacks
   - Deauthentication & DoS
 
@@ -42,6 +44,7 @@
   - If station data is available, directly deauth known stations of the AP selected for deauth
   - Deauth task now deauths on each AP’s primary channel
   - Station scan now uses discovered AP channels for scanning
+  - ESP32C5 shows band in AP scan results
 
 - Display
 
