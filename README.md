@@ -264,7 +264,7 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 - AWOK Mini
 
 
-- Carduputer
+- M5 Cardputer
 
 
 - FlipperHub Rocket
