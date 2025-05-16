@@ -17,6 +17,8 @@ CYD boards are easily recognizable with their yellow color and built-in display.
 
 > **Note**: CYD boards using the **ESP32-2432S028** (2.8 inches) are supported with GhostESP firmware. The **ESP32-2432S024** variant (2.4 inches) is not compatible.
 
+If you need further help identifying your CYD please see our [CYD ID Guide](./CYD-ID-Guide.md)
+
 ### 7-Inch Display Boards
 High-resolution display boards supported:
 - **Waveshare LCD**: 800x480 resolution
@@ -31,7 +33,7 @@ Multiple variants are supported:
 
 ### Rabbit labs GhostEsp Board
 
-- **Currently discontinued**
+- **Currently discontinued** (stay tuned :ghost:)
 - ESP32-C6 based
 - Rabbit labs GPS module port
 - 3x RGB LEDs for triple the fun
