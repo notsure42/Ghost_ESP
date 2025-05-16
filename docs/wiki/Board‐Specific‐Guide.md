@@ -29,6 +29,14 @@ Multiple variants are supported:
 - **AwokMini**: 128x128 display with joystick
 - **Awok V5**
 
+### Rabbit labs GhostEsp Board
+
+- **Currently discontinued**
+- ESP32-C6 based
+- Rabbit labs GPS module port
+- 3x RGB LEDs for triple the fun
+- Builtin SD card slot
+
 ### ESP32 Cardputer
 A compact, keyboard-integrated board designed for portability.
 - Built-in display (240x135)
