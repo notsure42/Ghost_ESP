@@ -978,10 +978,24 @@ void ap_manager_stop_services() {
     wifi_mode_t wifi_mode;
     esp_err_t err = esp_wifi_get_mode(&wifi_mode);
 
-    ESP_ERROR_CHECK(esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler));
-    ESP_ERROR_CHECK(
-        esp_event_handler_unregister(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &event_handler));
-    ESP_ERROR_CHECK(esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler));
+    {
+        esp_err_t err_reg = esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler);
+        if (err_reg != ESP_OK && err_reg != ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to unregister WIFI_EVENT handler: %s", esp_err_to_name(err_reg));
+        }
+    }
+    {
+        esp_err_t err_reg = esp_event_handler_unregister(IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &event_handler);
+        if (err_reg != ESP_OK && err_reg != ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to unregister IP_EVENT_AP_STAIPASSIGNED handler: %s", esp_err_to_name(err_reg));
+        }
+    }
+    {
+        esp_err_t err_reg = esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler);
+        if (err_reg != ESP_OK && err_reg != ESP_ERR_NOT_FOUND) {
+            ESP_LOGE(TAG, "Failed to unregister IP_EVENT_STA_GOT_IP handler: %s", esp_err_to_name(err_reg));
+        }
+    }
 
     if (err == ESP_OK) {
         if (wifi_mode == WIFI_MODE_AP || wifi_mode == WIFI_MODE_STA ||
