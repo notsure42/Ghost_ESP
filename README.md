@@ -66,10 +66,22 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 - **Station Scanning** – Monitor connected WiFi clients.
 
 
+- **Combined AP/Station Scan** – Perform both AP and station scans in one command (`scanall`).
+
+
+- **IP Lookup** – Retrieve local network IP information (`scanlocal`).
+
+
 - **Beacon Spam** – Broadcast customizable SSID beacons.
 
 
+- **Beacon Spam List Management** – Manage SSID lists (`beaconadd`, `beaconremove`, `beaconclear`, `beaconshow`) and spam them (`beaconspamlist`).
+
+
 - **Deauthentication Attacks** – Disconnect clients from specific networks.
+
+
+- **DHCP Starvation** – Flood DHCP requests to exhaust network leases (`dhcpstarve`).
 
 
 - **WiFi Capture** – Log probe requests, beacon frames, deauth packets, and raw data *(requires SD card or compatible storage)*.
@@ -142,6 +154,12 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 
 
 - **Flappy Ghost and Rave Modes** – Extra apps for boards with displays.
+
+
+- **Network Printer Output** – Print custom text to a LAN printer (`powerprinter`).
+
+
+- **Timezone Configuration** – Change system timezone string (`timezone`).
 
 
 
