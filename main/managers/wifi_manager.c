@@ -2458,24 +2458,38 @@ void wifi_manager_print_scan_results_with_oui() {
         // Print access point information including BSSID
         printf("[%u] SSID: %s,\n"
                "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
-               "     RSSI: %d,\n"
-               "     Company: %s\n",
-               i, sanitized_ssid, 
+               "     RSSI: %d,\n",
+               i, sanitized_ssid,
                scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
                scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
                scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
-               scanned_aps[i].rssi, company_str);
+               scanned_aps[i].rssi);
+#ifdef CONFIG_IDF_TARGET_ESP32C5
+        {
+            int ch = scanned_aps[i].primary;
+            const char *band_str = (ch > 14) ? "5GHz" : "2.4GHz";
+            printf("     Band: %s,\n", band_str);
+        }
+#endif
+        printf("     Company: %s\n", company_str);
 
         // Log information in terminal view including BSSID
         TERMINAL_VIEW_ADD_TEXT("[%u] SSID: %s,\n"
                                "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
-                               "     RSSI: %d,\n"
-                               "     Company: %s\n",
-                               i, sanitized_ssid, 
+                               "     RSSI: %d,\n",
+                               i, sanitized_ssid,
                                scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
                                scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
                                scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
-                               scanned_aps[i].rssi, company_str);
+                               scanned_aps[i].rssi);
+#ifdef CONFIG_IDF_TARGET_ESP32C5
+        {
+            int ch = scanned_aps[i].primary;
+            const char *band_str = (ch > 14) ? "5GHz" : "2.4GHz";
+            TERMINAL_VIEW_ADD_TEXT("     Band: %s,\n", band_str);
+        }
+#endif
+        TERMINAL_VIEW_ADD_TEXT("     Company: %s\n", company_str);
     }
 }
 
