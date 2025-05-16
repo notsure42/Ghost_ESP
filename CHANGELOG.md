@@ -40,6 +40,8 @@
 
 - Attacks
   - If station data is available, directly deauth known stations of the AP selected for deauth
+  - Deauth task now deauths on each AP’s primary channel
+  - Station scan now uses discovered AP channels for scanning
 
 - Display
 
@@ -80,6 +82,9 @@
   - Changed color theme to black and white
 
 ### Bug Fixes
+
+- General
+  - Addressed unaligned memory access warning in ICMP ping logic by using an aligned buffer for checksum calculation.
 
 - Display
   - Fixed an issue where an option would be duplicated and freeze the device.

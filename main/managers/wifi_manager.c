@@ -83,6 +83,11 @@ static esp_timer_handle_t scansta_channel_hop_timer = NULL;
 static uint8_t scansta_current_channel = 1;
 static bool scansta_hopping_active = false;
 
+// Dynamic list of channels discovered during AP scan (used for station scanning)
+static int *scansta_channel_list = NULL;
+static size_t scansta_channel_list_len = 0;
+static size_t scansta_channel_list_idx = 0;
+
 // Forward declarations for static channel hopping functions
 static esp_err_t start_scansta_channel_hopping(void);
 static void stop_scansta_channel_hopping(void);
@@ -1427,12 +1432,14 @@ void wifi_deauth_task(void *param) {
         if (strlen((const char *)selected_ap.ssid) > 0) {
             for (int i = 0; i < ap_count; i++) {
                 if (strcmp((char *)ap_info[i].ssid, (char *)selected_ap.ssid) == 0) {
-                    for (int y = 1; y < 12; y++) {
+                    // Deauth on the AP's channel
+                    {
+                        int ch = ap_info[i].primary;
                         uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-                        wifi_manager_broadcast_deauth(ap_info[i].bssid, y, broadcast_mac);
+                        wifi_manager_broadcast_deauth(ap_info[i].bssid, ch, broadcast_mac);
                         for (int j = 0; j < station_count; j++) {
                             if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
-                                wifi_manager_broadcast_deauth(ap_info[i].bssid, y, station_ap_list[j].station_mac);
+                                wifi_manager_broadcast_deauth(ap_info[i].bssid, ch, station_ap_list[j].station_mac);
                             }
                         }
                         vTaskDelay(pdMS_TO_TICKS(50));
@@ -1440,17 +1447,17 @@ void wifi_deauth_task(void *param) {
                 }
             }
         } else {
+            // Global deauth on each AP's channel
             for (int i = 0; i < ap_count; i++) {
-                for (int y = 1; y < 12; y++) {
-                    uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-                    wifi_manager_broadcast_deauth(ap_info[i].bssid, y, broadcast_mac);
-                    for (int j = 0; j < station_count; j++) {
-                        if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
-                            wifi_manager_broadcast_deauth(ap_info[i].bssid, y, station_ap_list[j].station_mac);
-                        }
+                int ch = ap_info[i].primary;
+                uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+                wifi_manager_broadcast_deauth(ap_info[i].bssid, ch, broadcast_mac);
+                for (int j = 0; j < station_count; j++) {
+                    if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
+                        wifi_manager_broadcast_deauth(ap_info[i].bssid, ch, station_ap_list[j].station_mac);
                     }
-                    vTaskDelay(pdMS_TO_TICKS(50));
                 }
+                vTaskDelay(pdMS_TO_TICKS(50));
             }
         }
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -2950,6 +2957,22 @@ void wifi_manager_start_station_scan() {
          printf("Using previously scanned AP list (%d APs).\n", ap_count);
          TERMINAL_VIEW_ADD_TEXT("Using cached AP list.\n");
     }
+    
+    // Build list of unique channels for channel hopping
+    if (scansta_channel_list) { free(scansta_channel_list); scansta_channel_list = NULL; }
+    scansta_channel_list_len = 0;
+    scansta_channel_list = calloc(ap_count, sizeof(int));
+    if (scansta_channel_list) {
+        for (int k = 0; k < ap_count; k++) {
+            int ch = scanned_aps[k].primary;
+            bool found = false;
+            for (size_t m = 0; m < scansta_channel_list_len; m++) {
+                if (scansta_channel_list[m] == ch) { found = true; break; }
+            }
+            if (!found) { scansta_channel_list[scansta_channel_list_len++] = ch; }
+        }
+    }
+    scansta_channel_list_idx = 0;
 
     // Now start monitor mode with the callback
     wifi_manager_start_monitor_mode(wifi_stations_sniffer_callback);
