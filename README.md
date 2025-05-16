@@ -225,6 +225,100 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 
 
 
+## Supported Boards
+
+
+
+
+
+<details>
+
+
+<summary>Supported Boards</summary>
+
+
+
+
+
+- DevKitC-ESP32
+
+
+- DevKitC-ESP32-S2
+
+
+- DevKitC-ESP32-C3
+
+
+- DevKitC-ESP32-S3
+
+
+- DevKitC-ESP32-C5
+
+
+- DevKitC-ESP32-C6
+
+
+- RabbitLabs GhostBoard
+
+
+- AWOK Mini
+
+
+- Carduputer
+
+
+- FlipperHub Rocket
+
+
+- FlipperHub Pocker Marauder
+
+
+- RabbitLabs Phantom
+
+- RabbitLabs Yapper Board (GPS NOT SUPPORTED AT THIS TIME)
+
+
+- Waveshare 7″ Touch
+
+
+- 'CYD2 USB'
+
+
+- 'CYD2 USB 2.4″'
+
+
+- 'CYD2 USB 2.4″ (C Variant)'
+
+
+- 'CYD Micro USB'
+
+
+- 'CYD Dual USB'
+
+
+- 'S3 T-Watch'
+
+
+- Marauder V4
+
+
+- Marauder V6
+
+
+
+
+</details>
+
+
+
+
+
+---
+
+
+
+
+
 ## Acknowledgments
 
 
