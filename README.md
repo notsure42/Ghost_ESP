@@ -126,6 +126,12 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 - **BLE Wardriving** – Map and track BLE devices in your vicinity.
 
 
+- **Flipper Zero RSSI Tracking** – Detect and monitor the signal strength (RSSI) of Flipper Zero devices (`blescan -f`).
+
+
+- **AirTag Spoofing** – Spoof the identity of a selected AirTag device (`spoofairtag`).
+
+
 
 
 
