@@ -1166,9 +1166,13 @@ void wifi_manager_start_scan() {
     rgb_manager_set_color(&rgb_manager, -1, 50, 255, 50, false);
 
     printf("WiFi Scan started\n");
-    printf("Please wait 5 Seconds...\n");
-    TERMINAL_VIEW_ADD_TEXT("WiFi Scan started\n");
-    TERMINAL_VIEW_ADD_TEXT("Please wait 5 Seconds...\n");
+    #ifdef CONFIG_IDF_TARGET_ESP32C5
+        printf("Please wait 10 Seconds...\n");
+        TERMINAL_VIEW_ADD_TEXT("Please wait 10 Seconds...\n");
+    #else
+        printf("Please wait 5 Seconds...\n");
+        TERMINAL_VIEW_ADD_TEXT("Please wait 5 Seconds...\n");
+    #endif
     esp_err_t err = esp_wifi_scan_start(&scan_config, true);
 
     if (err != ESP_OK) {
