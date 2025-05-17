@@ -207,6 +207,9 @@ Ghost ESP turns your ESP32 into a powerful, cheap and helpful wireless testing t
 - **ESP32 S3**
 
 
+- **ESP32 C5**
+
+
 - **ESP32 C6**
 
 
