@@ -79,11 +79,10 @@ Base models with different levels of compatibility:
 
 - Fully supported on **CYD boards** and **Cardputer**.
 - Not supported on **Marauder V6** and **Awok** variants.
-- For latest compatibility updates, check Discord announcements.
+- For latest compatibility updates, check [Discord](https://discord.gg/5cyNmUMgwh) announcements.
 
 ## ⚠️ Known Limitations
 
-- **ESP32-C6**: Limited feature support.
 - **Marauder V6** and **Awok variants**: No SD card support.
 - Some features, like BLE spam, may be missing in alpha releases.
 - Cache-clearing may be required when using the web flasher.
