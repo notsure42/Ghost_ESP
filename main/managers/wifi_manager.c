@@ -1024,7 +1024,7 @@ esp_err_t wifi_manager_start_evil_portal(const char *URLorFilePath, const char *
     ESP_ERROR_CHECK(esp_wifi_start());
 #ifdef CONFIG_IDF_TARGET_ESP32C5
     wifi_country_t country = {.cc = "00", .schan = 1, .nchan = 165, .policy = WIFI_COUNTRY_POLICY_MANUAL};
-    esp_wifi_set_country(&country);
+    ESP_ERROR_CHECK(esp_wifi_set_country(&country));
 #endif
     start_portal_webserver();
 
@@ -1138,7 +1138,11 @@ void wifi_manager_init(void) {
 
     // Start the Wi-Fi AP
     ESP_ERROR_CHECK(esp_wifi_start());
-
+#ifdef CONFIG_IDF_TARGET_ESP32C5
+    wifi_country_t country = {.cc = "00", .schan = 1, .nchan = 165, .policy = WIFI_COUNTRY_POLICY_MANUAL};
+    ESP_ERROR_CHECK(esp_wifi_set_country(&country));
+#endif
+    // Initialize global CA certificate store
     ret = esp_crt_bundle_attach(NULL);
     if (ret == ESP_OK) {
         printf("Global CA certificate store initialized successfully.\n");
@@ -1453,14 +1457,14 @@ void wifi_deauth_task(void *param) {
             // Global deauth on each AP's channel
             for (int i = 0; i < ap_count; i++) {
                 int ch = ap_info[i].primary;
-                uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+                    uint8_t broadcast_mac[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
                 wifi_manager_broadcast_deauth(ap_info[i].bssid, ch, broadcast_mac);
-                for (int j = 0; j < station_count; j++) {
-                    if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
+                    for (int j = 0; j < station_count; j++) {
+                        if (memcmp(station_ap_list[j].ap_bssid, ap_info[i].bssid, 6) == 0) {
                         wifi_manager_broadcast_deauth(ap_info[i].bssid, ch, station_ap_list[j].station_mac);
+                        }
                     }
-                }
-                vTaskDelay(pdMS_TO_TICKS(50));
+                    vTaskDelay(pdMS_TO_TICKS(50));
             }
         }
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -2462,7 +2466,7 @@ void wifi_manager_print_scan_results_with_oui() {
         printf("[%u] SSID: %s,\n"
                "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
                "     RSSI: %d,\n",
-               i, sanitized_ssid,
+               i, sanitized_ssid, 
                scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
                scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
                scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
@@ -2480,7 +2484,7 @@ void wifi_manager_print_scan_results_with_oui() {
         TERMINAL_VIEW_ADD_TEXT("[%u] SSID: %s,\n"
                                "     BSSID: %02X:%02X:%02X:%02X:%02X:%02X,\n"
                                "     RSSI: %d,\n",
-                               i, sanitized_ssid,
+                               i, sanitized_ssid, 
                                scanned_aps[i].bssid[0], scanned_aps[i].bssid[1],
                                scanned_aps[i].bssid[2], scanned_aps[i].bssid[3],
                                scanned_aps[i].bssid[4], scanned_aps[i].bssid[5],
