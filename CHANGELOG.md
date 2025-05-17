@@ -37,6 +37,7 @@
   - Added "Connect to saved WiFi" command
   - Configurable terminal text color
   - Added "List APs" command
+  - Added "Invert Colors" option to settings menu
 
 ### Changed
 

@@ -91,8 +91,24 @@ void m5stack_lvgl_render_callback(lv_disp_drv_t *drv, const lv_area_t *area,
 
   lv_disp_flush_ready(drv);
 }
-
 #endif
+
+static void invert_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area,
+                            lv_color_t *color_p) {
+    if (settings_get_invert_colors(&G_Settings)) {
+        int w = area->x2 - area->x1 + 1;
+        int h = area->y2 - area->y1 + 1;
+        int cnt = w * h;
+        for (int i = 0; i < cnt; i++) {
+            color_p[i].full = ~color_p[i].full;
+        }
+    }
+#ifdef CONFIG_USE_CARDPUTER
+    m5stack_lvgl_render_callback(drv, area, color_p);
+#else
+    disp_driver_flush(drv, area, color_p);
+#endif
+}
 
 void fade_out_cb(void *obj, int32_t v) {
   if (obj) {
@@ -395,11 +411,7 @@ void display_manager_init(void) {
   disp_drv.hor_res = CONFIG_TFT_WIDTH;
   disp_drv.ver_res = CONFIG_TFT_HEIGHT;
 
-#ifdef CONFIG_USE_CARDPUTER
-  disp_drv.flush_cb = m5stack_lvgl_render_callback;
-#else
-  disp_drv.flush_cb = disp_driver_flush;
-#endif
+  disp_drv.flush_cb = invert_flush_cb;
   disp_drv.draw_buf = &disp_buf;
   lv_disp_drv_register(&disp_drv);
 #elif defined(CONFIG_JC3248W535EN_LCD)

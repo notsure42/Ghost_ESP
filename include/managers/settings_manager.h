@@ -86,6 +86,7 @@ typedef struct {
   bool third_control_enabled;  // Enable third-screen tap control
   uint32_t terminal_text_color; // Terminal text color in 0xRRGGBB
   uint8_t menu_theme;  // Theme for main menu colors (0=Default)
+  bool invert_colors; // Invert screen colors
 } FSettings;
 
 // Function declarations
@@ -184,6 +185,8 @@ uint8_t settings_get_menu_theme(const FSettings *settings);
 
 void settings_set_terminal_text_color(FSettings *settings, uint32_t color);
 uint32_t settings_get_terminal_text_color(const FSettings *settings);
+void settings_set_invert_colors(FSettings *settings, bool enabled);
+bool settings_get_invert_colors(const FSettings *settings);
 
 static nvs_handle_t nvsHandle;
 

@@ -11,19 +11,20 @@ static lv_obj_t *menu_container;
 static lv_obj_t *scroll_up_btn;
 static lv_obj_t *scroll_down_btn;
 static lv_obj_t *back_btn;
-static lv_obj_t *setting_btns[5];
-static int current_option_indices[5];
+static lv_obj_t *setting_btns[6];
+static int current_option_indices[6];
 static bool touch_started = false;
 static int touch_start_x;
 static int touch_start_y;
 
-static const char *setting_labels[] = {"Display Timeout", "RGB Mode", "Menu Theme", "Old Controls", "Terminal Text Color"};
+static const char *setting_labels[] = {"Display Timeout", "RGB Mode", "Menu Theme", "Old Controls", "Terminal Text Color", "Invert Colors"};
 static const char *timeout_options[] = {"5s", "10s", "30s", "60s"};
 static const char *rgb_options[] = {"Normal", "Rainbow"};
 static const char *theme_options[] = {"Default", "Pastel", "Dark", "Bright", "Solarized", "Monochrome", "Rose Red", "Purple", "Blue", "Orange", "Neon", "Cyberpunk", "Ocean", "Sunset", "Forest"};
 static const char *third_options[] = {"Off", "On"};
 static const char *textcolor_labels[] = {"Green", "White", "Red", "Blue", "Yellow", "Cyan", "Magenta", "Orange"};
 static const uint32_t textcolor_values[] = {0x00FF00, 0xFFFFFF, 0xFF0000, 0x0000FF, 0xFFFF00, 0x00FFFF, 0xFF00FF, 0xFFA500};
+static const char *invert_options[] = {"Off", "On"};
 
 static void scroll_up_cb(lv_event_t *e) {
     if (!menu_container) return;
@@ -43,7 +44,9 @@ static void change_setting(int idx, bool inc) {
     else if (idx == 1) max = sizeof(rgb_options)/sizeof(rgb_options[0]);
     else if (idx == 2) max = sizeof(theme_options)/sizeof(theme_options[0]);
     else if (idx == 3) max = sizeof(third_options)/sizeof(third_options[0]);
-    else max = sizeof(textcolor_labels)/sizeof(textcolor_labels[0]);
+    else if (idx == 4) max = sizeof(textcolor_labels)/sizeof(textcolor_labels[0]);
+    else if (idx == 5) max = sizeof(invert_options)/sizeof(invert_options[0]);
+    else return;
     if (inc) {
         current_option_indices[idx] = (current_option_indices[idx] + 1) % max;
     } else {
@@ -60,8 +63,10 @@ static void change_setting(int idx, bool inc) {
         settings_set_menu_theme(&G_Settings, current_option_indices[idx]);
     } else if (idx == 3) {
         settings_set_thirds_control_enabled(&G_Settings, current_option_indices[idx] == 1);
-    } else {
+    } else if (idx == 4) {
         settings_set_terminal_text_color(&G_Settings, textcolor_values[current_option_indices[idx]]);
+    } else if (idx == 5) {
+        settings_set_invert_colors(&G_Settings, current_option_indices[idx] == 1);
     }
     settings_save(&G_Settings);
     char buf[64];
@@ -70,13 +75,15 @@ static void change_setting(int idx, bool inc) {
     else if (idx == 1) val = rgb_options[current_option_indices[idx]];
     else if (idx == 2) val = theme_options[current_option_indices[idx]];
     else if (idx == 3) val = third_options[current_option_indices[idx]];
-    else val = textcolor_labels[current_option_indices[idx]];
+    else if (idx == 4) val = textcolor_labels[current_option_indices[idx]];
+    else if (idx == 5) val = invert_options[current_option_indices[idx]];
     snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[idx], val, LV_SYMBOL_RIGHT);
     lv_obj_t *btn = setting_btns[idx];
     lv_obj_t *label = lv_obj_get_child(btn, 0);
     lv_label_set_text(label, buf);
     lv_obj_set_width(label, lv_obj_get_width(btn));
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_invalidate(lv_scr_act());
 }
 
 static void setting_row_cb(lv_event_t *e) {
@@ -87,7 +94,9 @@ static void setting_row_cb(lv_event_t *e) {
     else if (idx == 1) max = sizeof(rgb_options)/sizeof(rgb_options[0]);
     else if (idx == 2) max = sizeof(theme_options)/sizeof(theme_options[0]);
     else if (idx == 3) max = sizeof(third_options)/sizeof(third_options[0]);
-    else max = sizeof(textcolor_labels)/sizeof(textcolor_labels[0]);
+    else if (idx == 4) max = sizeof(textcolor_labels)/sizeof(textcolor_labels[0]);
+    else if (idx == 5) max = sizeof(invert_options)/sizeof(invert_options[0]);
+    else return;
     current_option_indices[idx] = (current_option_indices[idx] + 1) % max;
     if (idx == 0) {
         uint32_t v = current_option_indices[idx] == 0 ? 5000 : current_option_indices[idx] == 1 ? 10000 : current_option_indices[idx] == 2 ? 30000 : 60000;
@@ -98,8 +107,10 @@ static void setting_row_cb(lv_event_t *e) {
         settings_set_menu_theme(&G_Settings, current_option_indices[idx]);
     } else if (idx == 3) {
         settings_set_thirds_control_enabled(&G_Settings, current_option_indices[idx] == 1);
-    } else {
+    } else if (idx == 4) {
         settings_set_terminal_text_color(&G_Settings, textcolor_values[current_option_indices[idx]]);
+    } else if (idx == 5) {
+        settings_set_invert_colors(&G_Settings, current_option_indices[idx] == 1);
     }
     settings_save(&G_Settings);
     char buf[64];
@@ -108,12 +119,14 @@ static void setting_row_cb(lv_event_t *e) {
     else if (idx == 1) val = rgb_options[current_option_indices[idx]];
     else if (idx == 2) val = theme_options[current_option_indices[idx]];
     else if (idx == 3) val = third_options[current_option_indices[idx]];
-    else val = textcolor_labels[current_option_indices[idx]];
+    else if (idx == 4) val = textcolor_labels[current_option_indices[idx]];
+    else if (idx == 5) val = invert_options[current_option_indices[idx]];
     snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[idx], val, LV_SYMBOL_RIGHT);
     lv_obj_t *label = lv_obj_get_child(btn, 0);
     lv_label_set_text(label, buf);
     lv_obj_set_width(label, lv_obj_get_width(btn));
     lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_invalidate(lv_scr_act());
 }
 
 static void back_button_cb(lv_event_t *e) {
@@ -132,7 +145,7 @@ static void event_handler(InputEvent *ev) {
             int y = data->point.y;
             touch_started = false;
             lv_area_t area;
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 6; i++) {
                 if (setting_btns[i]) {
                     lv_obj_get_coords(setting_btns[i], &area);
                     if (x >= area.x1 && x <= area.x2 && y >= area.y1 && y <= area.y2) {
@@ -195,6 +208,7 @@ void settings_screen_create(void) {
             break;
         }
     }
+    current_option_indices[5] = settings_get_invert_colors(&G_Settings) ? 1 : 0;
 
     display_manager_fill_screen(lv_color_hex(0x121212));
     root_container = lv_obj_create(lv_scr_act());
@@ -224,14 +238,16 @@ void settings_screen_create(void) {
     lv_obj_set_style_border_width(menu_container, 0, 0);
     lv_obj_set_scrollbar_mode(menu_container, LV_SCROLLBAR_MODE_OFF);
 
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < 6; i++) {
         char buf[64];
         const char *val;
         if (i == 0) val = timeout_options[current_option_indices[i]];
         else if (i == 1) val = rgb_options[current_option_indices[i]];
         else if (i == 2) val = theme_options[current_option_indices[i]];
         else if (i == 3) val = third_options[current_option_indices[i]];
-        else val = textcolor_labels[current_option_indices[i]];
+        else if (i == 4) val = textcolor_labels[current_option_indices[i]];
+        else if (i == 5) val = invert_options[current_option_indices[i]];
+        else val = "";
         snprintf(buf, sizeof(buf), "%s %s: %s %s", LV_SYMBOL_LEFT, setting_labels[i], val, LV_SYMBOL_RIGHT);
         setting_btns[i] = lv_list_add_btn(menu_container, NULL, buf);
         lv_obj_set_height(setting_btns[i], button_height);

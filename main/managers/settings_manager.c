@@ -46,6 +46,7 @@ static const char *NVS_RGB_BLUE_PIN_KEY = "rgb_blue_pin";
 static const char *NVS_THIRD_CTRL_KEY = "third_ctrl";
 static const char *NVS_MENU_THEME_KEY = "menu_theme";
 static const char *NVS_TERMINAL_TEXT_COLOR_KEY = "term_color";
+static const char *NVS_INVERT_COLORS_KEY = "invert_colors";
 
 static const char *TAG = "SettingsManager";
 
@@ -119,6 +120,7 @@ void settings_set_defaults(FSettings *settings) {
   settings->rgb_blue_pin = -1;
   settings->third_control_enabled = false;
   settings->terminal_text_color = 0x00FF00;
+  settings->invert_colors = false;
 }
 
 void settings_load(FSettings *settings) {
@@ -339,7 +341,16 @@ void settings_load(FSettings *settings) {
   err = nvs_get_u8(nvsHandle, NVS_MENU_THEME_KEY, &value_u8);
   if (err == ESP_OK) settings->menu_theme = value_u8;
   err = nvs_get_u32(nvsHandle, NVS_TERMINAL_TEXT_COLOR_KEY, &value_u32);
-  if (err == ESP_OK) settings->terminal_text_color = value_u32;
+  if (err == ESP_OK) {
+    settings->terminal_text_color = value_u32;
+  }
+  uint8_t invert_val;
+  err = nvs_get_u8(nvsHandle, NVS_INVERT_COLORS_KEY, &invert_val);
+  if (err == ESP_OK) {
+    settings->invert_colors = invert_val;
+  } else {
+    settings->invert_colors = false;
+  }
 }
 
 static void update_rainbow_effect(const FSettings *settings) {
@@ -580,6 +591,8 @@ void settings_save(const FSettings *settings) {
 
   err = nvs_set_u8(nvsHandle, NVS_MENU_THEME_KEY, settings->menu_theme);
   if (err != ESP_OK) ESP_LOGE(S_TAG, "Failed to save menu_theme: %s", esp_err_to_name(err));
+  err = nvs_set_u8(nvsHandle, NVS_INVERT_COLORS_KEY, settings->invert_colors);
+  if (err != ESP_OK) ESP_LOGE(S_TAG, "Failed to save invert_colors: %s", esp_err_to_name(err));
   err = nvs_set_u32(nvsHandle, NVS_TERMINAL_TEXT_COLOR_KEY, settings->terminal_text_color);
   if (err != ESP_OK) ESP_LOGE(S_TAG, "Failed to save terminal_text_color: %s", esp_err_to_name(err));
   err = nvs_commit(nvsHandle);
@@ -848,4 +861,12 @@ void settings_set_terminal_text_color(FSettings *settings, uint32_t color) {
 
 uint32_t settings_get_terminal_text_color(const FSettings *settings) {
   return settings->terminal_text_color;
+}
+
+void settings_set_invert_colors(FSettings *settings, bool enabled) {
+  settings->invert_colors = enabled;
+}
+
+bool settings_get_invert_colors(const FSettings *settings) {
+  return settings->invert_colors;
 }
