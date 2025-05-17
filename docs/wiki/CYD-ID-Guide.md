@@ -6,7 +6,7 @@ Here you will find a list of CYD boards with images to assist in identification.
 
 ## Fake CYD ESP32-2432S024R
 
-Compatible firmware package: `CYD2USB2.4Inch_C.zip`
+Compatible firmware package: `CYDDualUSB.zip`
 
 Identifying features:
 
