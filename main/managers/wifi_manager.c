@@ -1021,11 +1021,7 @@ esp_err_t wifi_manager_start_evil_portal(const char *URLorFilePath, const char *
     dnsserver.ip.type = ESP_IPADDR_TYPE_V4;
     esp_netif_set_dns_info(wifiAP, ESP_NETIF_DNS_MAIN, &dnsserver);
     ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &ap_config));
-    ESP_ERROR_CHECK(esp_wifi_start());
-#ifdef CONFIG_IDF_TARGET_ESP32C5
-    wifi_country_t country = {.cc = "00", .schan = 1, .nchan = 165, .policy = WIFI_COUNTRY_POLICY_MANUAL};
-    ESP_ERROR_CHECK(esp_wifi_set_country(&country));
-#endif
+
     start_portal_webserver();
 
     dns_server_config_t dns_config = {
@@ -1135,13 +1131,9 @@ void wifi_manager_init(void) {
 
     // Apply the AP configuration
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &ap_config));
-
     // Start the Wi-Fi AP
     ESP_ERROR_CHECK(esp_wifi_start());
-#ifdef CONFIG_IDF_TARGET_ESP32C5
-    wifi_country_t country = {.cc = "00", .schan = 1, .nchan = 165, .policy = WIFI_COUNTRY_POLICY_MANUAL};
-    ESP_ERROR_CHECK(esp_wifi_set_country(&country));
-#endif
+
     // Initialize global CA certificate store
     ret = esp_crt_bundle_attach(NULL);
     if (ret == ESP_OK) {
@@ -3291,4 +3283,3 @@ void wifi_manager_dhcpstarve_display(void) {
 void wifi_manager_dhcpstarve_help(void) {
     printf("Usage: dhcpstarve start [threads]\\n       dhcpstarve stop\\n       dhcpstarve display\\n");
 }
-// Add DHCP starvation support end
