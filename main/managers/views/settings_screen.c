@@ -16,6 +16,7 @@ static int current_option_indices[6];
 static bool touch_started = false;
 static int touch_start_x;
 static int touch_start_y;
+static int selected_setting = 0; // index of currently selected setting
 
 static const char *setting_labels[] = {"Display Timeout", "RGB Mode", "Menu Theme", "Old Controls", "Terminal Text Color", "Invert Colors"};
 static const char *timeout_options[] = {"5s", "10s", "30s", "60s"};
@@ -180,16 +181,30 @@ static void event_handler(InputEvent *ev) {
         }
     } else if (ev->type == INPUT_TYPE_JOYSTICK) {
         int b = ev->data.joystick_index;
-        if (b == 0) {
-            // Left hardware button -> decrement first setting
-            lv_event_send(setting_btns[0], LV_EVENT_CLICKED, NULL);
-        } else if (b == 3) {
-            // Right hardware button -> increment first setting
-            lv_event_send(setting_btns[0], LV_EVENT_CLICKED, NULL);
-        } else if (b == 1) {
-            // Toggle setting selection -> move to next setting
-            // No-op or could implement selection indicator
-        } else if (b == 2) {
+        // Up arrow -> previous setting
+        if (b == 1) {
+            lv_obj_clear_state(setting_btns[selected_setting], LV_STATE_FOCUSED);
+            selected_setting = (selected_setting + 6 - 1) % 6;
+            lv_obj_add_state(setting_btns[selected_setting], LV_STATE_FOCUSED);
+            lv_obj_scroll_to_view(setting_btns[selected_setting], LV_ANIM_OFF);
+        }
+        // Down arrow -> next setting
+        else if (b == 4) {
+            lv_obj_clear_state(setting_btns[selected_setting], LV_STATE_FOCUSED);
+            selected_setting = (selected_setting + 1) % 6;
+            lv_obj_add_state(setting_btns[selected_setting], LV_STATE_FOCUSED);
+            lv_obj_scroll_to_view(setting_btns[selected_setting], LV_ANIM_OFF);
+        }
+        // Left arrow -> decrement value of selected setting
+        else if (b == 0) {
+            change_setting(selected_setting, false);
+        }
+        // Right arrow -> increment value of selected setting
+        else if (b == 3) {
+            change_setting(selected_setting, true);
+        }
+        // Back -> exit settings
+        else if (b == 2) {
             lv_event_send(back_btn, LV_EVENT_CLICKED, NULL);
         }
     }
@@ -252,7 +267,7 @@ void settings_screen_create(void) {
         setting_btns[i] = lv_list_add_btn(menu_container, NULL, buf);
         lv_obj_set_height(setting_btns[i], button_height);
         lv_obj_set_style_bg_color(setting_btns[i], lv_color_hex(0x1E1E1E), LV_PART_MAIN | LV_STATE_DEFAULT);
-        lv_obj_set_style_bg_opa(setting_btns[i], LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+        lv_obj_set_style_bg_color(setting_btns[i], lv_color_hex(0x444444), LV_PART_MAIN | LV_STATE_FOCUSED);
         lv_obj_set_style_border_width(setting_btns[i], 0, LV_PART_MAIN);
         lv_obj_set_style_radius(setting_btns[i], 0, LV_PART_MAIN);
         lv_obj_set_style_pad_top(setting_btns[i], SCROLL_BTN_PADDING * 2, LV_PART_MAIN);
@@ -305,6 +320,15 @@ void settings_screen_create(void) {
     lv_obj_t *bl = lv_label_create(back_btn);
     lv_label_set_text(bl, LV_SYMBOL_LEFT " Back");
     lv_obj_center(bl);
+
+    // Highlight initial selection
+    selected_setting = 0;
+    for (int i = 0; i < 6; i++) {
+        if (setting_btns[i]) {
+            if (i == selected_setting) lv_obj_add_state(setting_btns[i], LV_STATE_FOCUSED);
+            else lv_obj_clear_state(setting_btns[i], LV_STATE_FOCUSED);
+        }
+    }
 
     display_manager_add_status_bar("Settings");
 }

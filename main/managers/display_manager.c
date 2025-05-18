@@ -622,6 +622,9 @@ void hardware_input_task(void *pvParameters) {
           printf("Unhandled key value: %d\n", key_value);
 
           switch (key_value) {
+          case 0x29: // ESC key HID code
+            event.data.joystick_index = 2;
+            break;
           case 180:
             event.data.joystick_index = 1;
             break;
