@@ -1106,6 +1106,26 @@ void wifi_manager_init(void) {
 
     ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 
+    // configure country based on chip: full dual-band on C5, 2.4GHz only on others
+#if CONFIG_IDF_TARGET_ESP32C5
+    // enable all 2.4 GHz (ch1-14) and 5 GHz (ch36-165) channels manually on ESP32-C5
+    wifi_country_t country = {
+        .cc     = "JP",
+        .schan  = 1,
+        .nchan  = 165,
+        .policy = WIFI_COUNTRY_POLICY_MANUAL
+    };
+#else
+    // enable all 2.4 GHz channels (1-14) manually
+    wifi_country_t country = {
+        .cc     = "JP",
+        .schan  = 1,
+        .nchan  = 14,
+        .policy = WIFI_COUNTRY_POLICY_MANUAL
+    };
+#endif
+    ESP_ERROR_CHECK(esp_wifi_set_country(&country));
+
     // Create the WiFi event group
     wifi_event_group = xEventGroupCreate();
 
