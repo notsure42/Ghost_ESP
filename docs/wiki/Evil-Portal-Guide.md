@@ -23,10 +23,8 @@ An Evil Portal creates a fake WiFi hotspot that looks like a real login page (li
    - Put it in the `portal` folder on your SD card
 
 4. **Start Your Portal**
-   ```
-   startportal /portal/index.html "Free WiFi" domainexample
-   ```
-   This creates a WiFi network called "Free WiFi"
+   - Use the command `startportal /portal/index.html "Free WiFi" domainexample` to create your portal!
+   - This creates a WiFi network called "Free WiFi"
 
 5. **Test It!**
    - Look for "Free WiFi" in your phone's WiFi list
@@ -36,7 +34,8 @@ An Evil Portal creates a fake WiFi hotspot that looks like a real login page (li
 
 ## Step-by-Step Setup
 
-### Setting Up Your SD Card:
+### Setting Up Your SD Card
+
 1. Get an SD card (32GB or less works best)
 2. Format it to FAT32
 3. Create a folder called `portal` on the SD card
@@ -47,23 +46,27 @@ An Evil Portal creates a fake WiFi hotspot that looks like a real login page (li
 ## Common Problems & Fixes
 
 ### "I don't see the WiFi network"
+
 1. Turn your phone's WiFi off and on
 2. Wait 30 seconds - it takes time to start
 3. Make sure you typed the command correctly
 4. Try restarting your board
 
 ### "I see the network but no login page"
+
 1. Make sure you're not connected to any other networks
 2. Try opening your browser and going to any website
 3. If you see MSN, you're connected to real internet instead of the portal
-4. Try typing "http://domainexample.local/login" in your browser
+4. Try typing `http://domainexample.local/login` in your browser
 
 ### "The page looks wrong on my phone"
+
 - This is normal - mobile browsers can be tricky
 - Try a different phone or computer
 - Use the simple template below for best results
 
 ## Super Simple Template
+
 Copy this exactly - it works on most devices:
 
 ```html
@@ -102,33 +105,36 @@ Copy this exactly - it works on most devices:
 ```
 
 ## How to Stop
-Just type:
-```
-stopportal
-```
+
+Just type: `stopportal`
 
 ## Important Warnings
+
 - Only use this for learning or authorized testing
 - Using this to steal real passwords is illegal
 - Get permission before testing on others
 - This is for educational purposes only
 
 ## Need More Help?
-- Join our Discord: https://discord.gg/eyE46kKPPR
+
+- Join our [Discord](https://discord.gg/5cyNmUMgwh)
 - Check if your board is supported: [Board Guide](Board‐Specific‐Guide.md)
 - Read about commands: [Commands Guide](Commands.md)
 
 ## Creating Custom Portal Pages with SingleFile Extension
 
 ### What is SingleFile?
+
 SingleFile is a browser extension that saves web pages as single HTML files, perfect for creating custom portal pages.
 
 ### Setup SingleFile
+
 1. Install the extension for your browser:
    - [Chrome Web Store](https://chrome.google.com/webstore/detail/singlefile/mpiodijhokgodhhofbcjdecpffjipkle)
    - [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/single-file)
 
 ### Using SingleFile to Create Portal Pages
+
 1. **Find a Login Page You Want to Copy**
    - Go to any login page you want to use as template
    - Make sure it's a simple page that works well on mobile
@@ -148,6 +154,7 @@ SingleFile is a browser extension that saves web pages as single HTML files, per
    - Change the form action to `/login`
    - Make sure form method is `post`
    Example:
+
    ```html
    <form action="/login" method="post">
    ```
@@ -158,7 +165,8 @@ SingleFile is a browser extension that saves web pages as single HTML files, per
    - If it looks broken, use the simple template provided above instead
 
 ### Tips for SingleFile
+
 - Choose simple login pages - they work better
 - Avoid pages with lots of images or animations
 - Some sites might not work well - try different ones
-- Hotel/cafe portal pages usually work best 
+- Hotel/cafe portal pages usually work best
