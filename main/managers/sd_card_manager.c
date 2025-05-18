@@ -309,9 +309,9 @@ esp_err_t sd_card_init(void) {
 #endif
 
 #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3)
-  ret = spi_bus_initialize(SPI3_HOST, &bus_config, dmabus);
+  ret = spi_bus_initialize(SPI2_HOST, &bus_config, dmabus);
   if (ret != ESP_OK && ret != ESP_ERR_INVALID_STATE) {
-    printf("Failed to initialize SPI3 bus: %s\n", esp_err_to_name(ret));
+    printf("Failed to initialize SPI2 bus: %s\n", esp_err_to_name(ret));
     return ret;
   }
 #else
@@ -330,7 +330,7 @@ esp_err_t sd_card_init(void) {
   sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
   slot_config.gpio_cs = sd_card_manager.spi_cs_pin;
 #if defined(CONFIG_IDF_TARGET_ESP32) || defined(CONFIG_IDF_TARGET_ESP32S3)
-  slot_config.host_id = SPI3_HOST;
+  slot_config.host_id = SPI2_HOST;
 #else
   slot_config.host_id = SPI2_HOST;
 #endif

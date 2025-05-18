@@ -402,14 +402,23 @@ void display_manager_init(void) {
   static lv_color_t buf2[CONFIG_TFT_WIDTH * 20] __attribute__((aligned(4)));
 #endif
 
+  /* Determine display resolution */
+#ifdef CONFIG_USE_CARDPUTER
+  int width = get_m5gfx_width();
+  int height = get_m5gfx_height();
+#else
+  int width = CONFIG_TFT_WIDTH;
+  int height = CONFIG_TFT_HEIGHT;
+#endif
+
   static lv_disp_draw_buf_t disp_buf;
-  lv_disp_draw_buf_init(&disp_buf, buf1, buf2, CONFIG_TFT_WIDTH * 5);
+  lv_disp_draw_buf_init(&disp_buf, buf1, buf2, width * 5);
 
   /* Initialize the display */
   static lv_disp_drv_t disp_drv;
   lv_disp_drv_init(&disp_drv);
-  disp_drv.hor_res = CONFIG_TFT_WIDTH;
-  disp_drv.ver_res = CONFIG_TFT_HEIGHT;
+  disp_drv.hor_res = width;
+  disp_drv.ver_res = height;
 
   disp_drv.flush_cb = invert_flush_cb;
   disp_drv.draw_buf = &disp_buf;
