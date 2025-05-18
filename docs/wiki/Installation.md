@@ -24,7 +24,7 @@ Choose your preferred method:
 ### Web Flasher Method
 
 1. **Prepare for Flashing**
-   - Visit [Spooky Tools Web Flasher](https://flasher.spookytools.com/)
+   - Visit [Ghost ESP Web Flasher](https://flasher.ghostesp.net/)
    - If the site doesn’t load correctly, clear your browser cache and try again.
    - Use **Google Chrome** as Firefox does not support WebSerial.
    - Ensure your ESP32 is disconnected from other software or tools to avoid port conflicts.
@@ -128,6 +128,7 @@ After flashing, you have several control options to configure and interact with 
    - Connect via a serial interface for direct command-line control.
    - Provides full access to GhostESP’s command suite and is ideal for advanced users or troubleshooting.
    - Refer to the [Command Line Interface Documentation](https://github.com/jaylikesbunda/Ghost_ESP/blob/main/main/core/commandline.c) for available commands and usage examples.
+   - Android devices can interface with the serial command line directly using the (Serial USB Terminal app)[https://play.google.com/store/apps/details?id=de.kai_morich.serial_usb_terminal&hl=en-US]
 
 4. **Flipper Zero App**
    - Control GhostESP directly from the Flipper Zero.

@@ -17,6 +17,8 @@ CYD boards are easily recognizable with their yellow color and built-in display.
 
 > **Note**: CYD boards using the **ESP32-2432S028** (2.8 inches) are supported with GhostESP firmware. The **ESP32-2432S024** variant (2.4 inches) is not compatible.
 
+If you need further help identifying your CYD please see our [CYD ID Guide](./CYD-ID-Guide.md)
+
 ### 7-Inch Display Boards
 High-resolution display boards supported:
 - **Waveshare LCD**: 800x480 resolution
@@ -28,6 +30,14 @@ Multiple variants are supported:
 - **MarauderV6** and **AwokDual**: 240x320 touchscreen
 - **AwokMini**: 128x128 display with joystick
 - **Awok V5**
+
+### Rabbit labs GhostEsp Board
+
+- **Currently discontinued** (stay tuned :ghost:)
+- ESP32-C6 based
+- Rabbit labs GPS module port
+- 3x RGB LEDs for triple the fun
+- Builtin SD card slot
 
 ### ESP32 Cardputer
 A compact, keyboard-integrated board designed for portability.
@@ -69,11 +79,10 @@ Base models with different levels of compatibility:
 
 - Fully supported on **CYD boards** and **Cardputer**.
 - Not supported on **Marauder V6** and **Awok** variants.
-- For latest compatibility updates, check Discord announcements.
+- For latest compatibility updates, check [Discord](https://discord.gg/5cyNmUMgwh) announcements.
 
 ## ⚠️ Known Limitations
 
-- **ESP32-C6**: Limited feature support.
 - **Marauder V6** and **Awok variants**: No SD card support.
 - Some features, like BLE spam, may be missing in alpha releases.
 - Cache-clearing may be required when using the web flasher.
