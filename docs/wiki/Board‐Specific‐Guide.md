@@ -5,8 +5,10 @@ This guide helps you identify your board type and start using GhostESP firmware.
 ## 🔍 Identifying Your Board
 
 ### CYD (Cheap Yellow Display) Boards
+
 CYD boards are easily recognizable with their yellow color and built-in display.  
 **Features:**
+
 - Built-in display with touch functionality
 - SD card slot
 - RGB LED indicators
@@ -20,13 +22,17 @@ CYD boards are easily recognizable with their yellow color and built-in display.
 If you need further help identifying your CYD please see our [CYD ID Guide](./CYD-ID-Guide.md)
 
 ### 7-Inch Display Boards
+
 High-resolution display boards supported:
+
 - **Waveshare LCD**: 800x480 resolution
 - **Crowtech LCD**: 800x480 resolution  
 Both variants use the **ESP32-S3**.
 
 ### Awok & Marauder Boards
+
 Multiple variants are supported:
+
 - **MarauderV6** and **AwokDual**: 240x320 touchscreen
 - **AwokMini**: 128x128 display with joystick
 - **Awok V5**
@@ -40,13 +46,17 @@ Multiple variants are supported:
 - Builtin SD card slot
 
 ### ESP32 Cardputer
+
 A compact, keyboard-integrated board designed for portability.
+
 - Built-in display (240x135)
 - Integrated keyboard
 - SD card slot
 
 ### Generic ESP32 Boards
+
 Base models with different levels of compatibility:
+
 - **ESP32** (standard model)
 - **ESP32-S2**
 - **ESP32-S3**
@@ -55,14 +65,16 @@ Base models with different levels of compatibility:
 
 ## 📱 Display Support and Resolutions
 
-### Supported Resolutions:
+### Supported Resolutions
+
 - **CYD Boards**: 240x320 with touchscreen (compatible with ESP32-2432S028 2.8-inch only)
 - **7-inch Displays**: 800x480 with touchscreen
 - **Cardputer**: 240x135
 - **AwokMini**: 128x128 with joystick control
 - **Marauder V6 / AwokDual**: 240x320 with touchscreen
 
-### Feature Notes:
+### Feature Notes
+
 - SD card compatibility varies across models:
   - Full support: **CYD boards** and **Cardputer**
   - Not supported: **Marauder V6**, **Awok Dual Touch**, and **Awok Mini**

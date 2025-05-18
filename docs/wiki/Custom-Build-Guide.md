@@ -1,12 +1,13 @@
-## Custom Build Using GitHub Actions
+# Custom Build Using GitHub Actions
 
 This guide will walk you through the process of creating your own custom build of GhostESP using GitHub Actions.
 
-### Prerequisites
+## Prerequisites
+
 - A GitHub account
 - Basic understanding of GitHub (forking, repositories)
 
-### Step-by-Step Guide
+## Step-by-Step Guide
 
 1. **Fork the Repository**
    - Go to the main GhostESP repository on GitHub
@@ -31,17 +32,19 @@ This guide will walk you through the process of creating your own custom build o
    - Scroll down to the "Artifacts" section
    - Download the build artifacts containing your custom firmware
 
-### Build Options
+## Build Options
 
 The custom build workflow allows you to configure various options for your build. These may include:
+
 - Target board selection
 - Feature toggles
 - Debug options
 - Custom configurations
 
-### Troubleshooting
+## Troubleshooting
 
 If your build fails, check the following:
+
 1. Ensure your fork is up to date with the main repository
 2. Review the workflow logs for any error messages
 3. Verify that you have selected compatible build options
@@ -51,9 +54,10 @@ If your build fails, check the following:
 ### Advanced Usage
 
 For advanced users who want to modify the build process:
+
 1. Navigate to `.github/workflows/` in your forked repository
 2. Locate the custom build workflow file
 3. Edit the workflow file to customize the build process according to your needs
 4. Commit your changes and run the workflow
 
-Remember to follow the repository's guidelines and license terms when making modifications. 
+Remember to follow the repository's guidelines and license terms when making modifications.

@@ -11,8 +11,7 @@ Before you can enable Rave Mode, you need to connect your ESP32 to a Wi-Fi netwo
 1. Open your serial terminal and connect to your ESP32.
 2. Enter the command:
 
- ```connect SSID PASSWORD```
-
+    ```connect SSID PASSWORD```
 
 Replace `SSID` with your Wi-Fi network name and `PASSWORD` with your network password.
 
@@ -36,31 +35,27 @@ Depending on your setup, you can choose between two scripts for Rave Mode:
 Both scripts should work out of the box. To run a script:
 
 1. Download the script from Ghost_ESP\scripts\Audio Visualizers (either `Display_Visualizer.py` or `LED_Visualizer.py`).
-2. Run the script using Python:
+1. Run the script using Python:
 
+    ```python Display_Visualizer.py```
 
- ```python Display_Visualizer.py```
+    or
 
-  or 
-
- ```python LED_Visualizer.py```
-
+    ```python LED_Visualizer.py```
 
 ### Step 4: Adjusting the Multicast Address (if needed)
 
 If the script doesn't work right away, you may need to adjust the multicast or broadcast IP address:
 
 1. Open the script in a text editor.
-2. Find the line with the IP address:
+1. Find the line with the IP address:
 
-```UDP_IP = "192.168.1.105"```
+    ```UDP_IP = "192.168.1.105"```
 
-or
+    or
 
-```BROADCAST_IP = '192.168.1.255'```
-
-
-3. Make sure that the IP address matches your network's subnet. For example, if your ESP32's IP is `192.168.2.x`, the address in the script should be `192.168.2.255`.
+    ```BROADCAST_IP = '192.168.1.255'```
+1. Make sure that the IP address matches your network's subnet. For example, if your ESP32's IP is `192.168.2.x`, the address in the script should be `192.168.2.255`.
 
 After ensuring the IP address matches your network's subnet, Rave Mode should be ready to go!
 
@@ -85,7 +80,7 @@ To ensure audio is played through both **Virtual Audio Cable** and your speakers
 
 This setup allows the audio to be captured by the Virtual Audio Cable while playing through your speakers.
 
-### Step 7: Enjoy Rave Mode!
+### Step 7: Enjoy Rave Mode :dancer::man_dancing::notes:
 
 With everything set up, your ESP32 should now synchronize its display or LEDs with the audio playing on your computer. Sit back and enjoy the light show!
 
