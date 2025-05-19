@@ -188,8 +188,6 @@ uint32_t settings_get_terminal_text_color(const FSettings *settings);
 void settings_set_invert_colors(FSettings *settings, bool enabled);
 bool settings_get_invert_colors(const FSettings *settings);
 
-static nvs_handle_t nvsHandle;
-
-FSettings G_Settings;
+extern FSettings G_Settings;
 
 #endif // SETTINGS_MANAGER_H

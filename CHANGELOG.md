@@ -43,7 +43,7 @@
 
 - Attacks
   - If station data is available, directly deauth known stations of the AP selected for deauth
-  - Deauth task now deauths on each AP’s primary channel
+  - Deauth task now deauths on each AP's primary channel
   - Station scan now uses discovered AP channels for scanning
   - ESP32C5 shows band in AP scan results
 
@@ -88,6 +88,7 @@
 ### Bug Fixes
 
 - General
+  - Fixed NVS persistence issues for AP credentials by ensuring a single shared NVS handle and settings instance.
   - Addressed unaligned memory access warning in ICMP ping logic by using an aligned buffer for checksum calculation.
 
 - Display

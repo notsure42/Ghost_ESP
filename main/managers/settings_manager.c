@@ -50,6 +50,9 @@ static const char *NVS_INVERT_COLORS_KEY = "invert_colors";
 
 static const char *TAG = "SettingsManager";
 
+static nvs_handle_t nvsHandle;
+FSettings G_Settings;
+
 void settings_init(FSettings *settings) {
   settings_set_defaults(settings);
   esp_err_t err = nvs_flash_init();
