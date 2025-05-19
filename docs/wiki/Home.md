@@ -21,6 +21,7 @@ Welcome to the official wiki for GhostESP Firmware, a powerful firmware solution
 ## Important Notice
 
 GhostESP firmware is actively developed with regular updates. Current version VA1.3.7 includes:
+
 - Enhanced display support with Flappy Ghost game
 - Evil Portal functionality (online and offline)
 - SD card support for compatible devices
@@ -29,8 +30,9 @@ GhostESP firmware is actively developed with regular updates. Current version VA
 - Rave Mode for syncing ESP32 displays/LEDs with audio
 
 For the latest updates and support:
-- Join our Discord: https://discord.gg/5cyNmUMgwh
-- Use our new flasher: https://flasher.ghostesp.net/
+
+- Join our [Discord](https://discord.gg/5cyNmUMgwh)
+- Use our new flasher: <https://flasher.ghostesp.net/>
 - Check GitHub for releases
 
 ## Legal Disclaimer

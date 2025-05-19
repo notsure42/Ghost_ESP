@@ -7,6 +7,7 @@ GhostESP is a robust and feature-rich firmware designed for ESP32 microcontrolle
 The following ESP32 models are officially supported:
 
 ### Display-Enabled Boards
+
 - **CYD (Cheap Yellow Display) variants**
   - **CYD2USB** (USB-C)
   - **CYDMicroUSB**
@@ -19,6 +20,7 @@ The following ESP32 models are officially supported:
 - **AwokMini**: 128x128 display with joystick for navigation
 
 ### Generic Boards
+
 - **ESP32 Wroom**: Standard model
 - **ESP32-S2**
 - **ESP32-C3**
@@ -38,6 +40,7 @@ The following ESP32 models are officially supported:
 - **Framework**: ESP-IDF
 
 ### Recent Feature Additions
+
 - **Qt6-based control application** for enhanced desktop control
 - **CYD RGB LED control support** for customizable status indicators
 - **SD card support** for compatible devices
@@ -47,6 +50,7 @@ The following ESP32 models are officially supported:
 - **Dial Connect** for Smart TV Casting
 
 ### Features Under Development
+
 - **Additional screen support optimizations** to improve compatibility
 - **Enhanced SD card compatibility** for more board models
 - **BLE feature improvements** for device discovery and interaction
@@ -64,6 +68,7 @@ GhostESP builds upon the work of several open-source projects and developers:
 ## Project Goals
 
 GhostESP aims to provide:
+
 - Comprehensive wireless testing capabilities
 - A user-friendly interface
 - Stable and reliable performance

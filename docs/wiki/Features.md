@@ -5,6 +5,7 @@ GhostESP comes packed with various features for wireless network exploration and
 ## WiFi Capabilities
 
 ### Network Analysis
+
 - **AP Scanning**
   - Detect all nearby WiFi networks
   - Detailed visibility into wireless environments
@@ -14,6 +15,7 @@ GhostESP comes packed with various features for wireless network exploration and
   - Monitor active devices on networks
 
 ### Network Interaction
+
 - **Beacon Spam**
   - Deploy customizable SSID beacons
   - Multiple operation modes available
@@ -27,6 +29,7 @@ GhostESP comes packed with various features for wireless network exploration and
   - Targeted network testing capabilities
 
 ### Data Collection
+
 - **WiFi Capture**
   - Capture probe requests
   - Record beacon frames
@@ -37,6 +40,7 @@ GhostESP comes packed with various features for wireless network exploration and
 ## BLE Functions
 
 ### Scanning Capabilities
+
 - **General BLE Scanning**
   - Detect BLE devices
   - Monitor BLE advertisements
@@ -49,6 +53,7 @@ GhostESP comes packed with various features for wireless network exploration and
 ## Device Controls
 
 ### RGB LED Modes
+
 - Stealth
 - Normal
 - Rainbow
@@ -58,11 +63,13 @@ Each mode provides visual feedback for different operations
 ## Additional Features
 
 ### Media Device Integration
+
 - DIAL protocol support
 - Chromecast V2 compatibility
 - Roku device interaction
 
 ### Upcoming Features
+
 - Enhanced BLE spam capabilities
 - Screen support improvements
 - Additional BLE features
