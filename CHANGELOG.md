@@ -110,6 +110,7 @@
   - Don't check for csv file before flushing buffer over UART
   - Actually open a CSV file for wardriving when an SD card is present
   - Fix CSV file timestamp to reflect GPS date/time on SD card close
+  - Reset GPS timeout flag on initialization
 
 ## Revival v1.4.9
 
